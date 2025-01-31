@@ -45,7 +45,19 @@
                   vcpkg
                   vcpkg-tool
                   gdb
+
+                  # correct lsp support
+                  bear
+
+                  # rocm
+                  rocmPackages.clr
+                  rocmPackages.rocm-smi
                 ];
+
+                # Environment variables required for ROCm
+                postShellHook = ''
+                  export ROCM_PATH=${pkgs.rocmPackages.clr}
+                '';
               };
         }
       );

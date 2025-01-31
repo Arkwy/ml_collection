@@ -25,27 +25,33 @@
         );
     in
     {
-
+      allowBroken = true;
       devShells = forEachSupportedSystem (
         { pkgs }:
         {
           default = pkgs.mkShell rec {
             venvDir = ".venv";
-
+            # buildInputs = with pkgs; [
+            #   zstd
+            #   zlib
+            # ];
             packages =
               with pkgs;
               [
                 # python
-                python312
+                python313
               ]
-              ++ (with pkgs.python312Packages; [
+              ++ (with pkgs.python313Packages; [
                 pip
-                numpy
+                python-lsp-server
                 torch
-                matplotlib
-                notebook
+                numpy
                 venvShellHook
               ]);
+            # postShellHook = ''
+            #   export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath buildInputs}:$LD_LIBRARY_PATH"
+            #   export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib.outPath}/lib:$LD_LIBRARY_PATH"
+            # '';
           };
         }
       );
