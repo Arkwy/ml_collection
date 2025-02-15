@@ -45,6 +45,7 @@
                   vcpkg
                   vcpkg-tool
                   gdb
+                  valgrind
 
                   # correct lsp support
                   bear

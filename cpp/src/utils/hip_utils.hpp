@@ -1,6 +1,8 @@
 #ifndef HIP_UTILS_H
 #define  HIP_UTILS_H
 
+#include <iostream>
+
 #define HIP_CHECK(command)                                                                                             \
     {                                                                                                                  \
         hipError_t status = command;                                                                                   \

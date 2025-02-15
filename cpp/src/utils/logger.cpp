@@ -1,5 +1,5 @@
 // Logger.cpp
-#include "logger.h"
+#include "logger.hpp"
 
 // Singleton instance function
 Logger& Logger::getInstance() {

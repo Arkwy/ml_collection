@@ -1,9 +1,9 @@
 #include <hip/amd_detail/amd_hip_runtime.h>
 #include <string>
 
-#include "hip_timer.h"
-#include "hip_utils.h"
-#include "logger.h"
+#include "hip_timer.hpp"
+#include "hip_utils.hpp"
+#include "logger.hpp"
 
 using namespace std::literals;
 
@@ -17,7 +17,6 @@ void HIPTimer::reset() {
     hip_last = hip_total = cpu_last = cpu_total = 0.0;
     laps = 0;
     running = false;
-    Logger &logger = Logger::getInstance();
 }
 
 void HIPTimer::start() {

@@ -1,10 +1,39 @@
+# Compiler
 HIPCC = hipcc
-TARGET = hip_build
 
+# Directories
+SRC_DIR = src
+OBJ_DIR = obj
+BIN_DIR = bin
+
+# Executable name
+TARGET = $(BIN_DIR)/main
+
+# Find all source files
+SRCS := $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/utils/*.cpp  $(SRC_DIR)/tensor/*.cpp)
+PSO := $(wildcard $(SRC_DIR)/pso/*.cpp)
+OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
+# Compiler flags
+CXXFLAGS = -std=c++20 -O2 -Wall
+LDFLAGS =
+
+# Create necessary directories
+$(shell mkdir -p $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/utils $(OBJ_DIR)/tensor $(OBJ_DIR)/pso)
+
+# Default target
 all: $(TARGET)
 
-$(TARGET): src/main.cpp
-	$(HIPCC) -o $(TARGET) src/main.cpp
+# Build executable
+$(TARGET): $(OBJS)
+	$(HIPCC) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
+# Compile source files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(HIPCC) $(CXXFLAGS) -c -o $@ $<
+
+# Clean build files
 clean:
-	rm -f $(TARGET)
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
+
+.PHONY: all clean
