@@ -3,3 +3,7 @@
 .envrc
 __pycache__/
 target/
+cpp/.cache/
+cpp/obj/
+cpp/bin/
+cpp/compile_commands.json
