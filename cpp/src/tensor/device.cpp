@@ -1,6 +1,5 @@
 #include <hip/amd_detail/amd_hip_runtime.h>
 #include <stdexcept>
-#include <string>
 
 #include "device.hpp"
 #include "../utils/hip_utils.hpp"
@@ -12,6 +11,9 @@ GPU::GPU(const size_t id) {
     int device_count;
     HIP_CHECK(hipGetDeviceCount(&device_count));
     if (id >= device_count) {
+        if (id == 0) {
+            // TODO
+        }
         throw invalid_argument("Device id greater than the number of available GPUs."); 
     }
 
