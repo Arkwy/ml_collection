@@ -26,34 +26,34 @@ class TensorBase {
   protected:
     shared_ptr<Storage<T, D>> storage;
     vector<size_t> shape;
-    vector<size_t> strides;
+    vector<size_t> stride;
     size_t offset;
 
     TensorBase(const vector<size_t> &shape, const D &device = D());
 
-    virtual void write_storage(const size_t offset, const size_t n, const T value) = 0;
-    virtual void write_storage(const size_t offset, const size_t n, const T* values, const Device& src) = 0;
+    virtual void write_storage(const size_t& offset, const size_t& n, const T& value) = 0;
+    virtual void write_storage(const size_t& offset, const size_t& n, const T* const &values, const Device& src) = 0;
 
   public:
     size_t numel() const;
     size_t dim() const;
-    bool is_view() const;
-    const shared_ptr<Storage<T, D>>& get_storage() const {
-        return storage;
+    bool is_contiguous() const;
+    const Storage<T, D>& get_storage() const {
+        return *storage.get();
     }
-    const D get_device() const {
-        return storage.get()->get_device();
+    const D& get_device() const  {
+        return storage->get_device();
     }
     const vector<size_t>& get_shape() const {
         return shape;
     }
-    const vector<size_t>& get_strides() const {
-        return strides;
+    const vector<size_t>& get_stride() const {
+        return stride;
     }
     const size_t& get_offset() const {
         return offset;
     }
-    static Derived full(const vector<size_t> &shape, const T value, const D &device = D()) {
+    static Derived full(const vector<size_t> &shape, const T& value, const D &device = D()) {
         Derived tensor(shape, device);
         tensor.fill(value);
         return tensor;
@@ -92,12 +92,13 @@ class TensorBase {
     // }
     Derived clone();
     Derived copy();
-    This& fill(const T value);
-    This& fill(const T* values);
+    This& contiguous();
+    This& fill(const T &value);
+    This& fill(const T* &values);
     This& reshape(const vector<size_t>& new_shape);
     // This& expand(const vector<size_t>& new_shape);
     This& flatten();
-    This& operator[](const initializer_list<TensorIndexer> slices);
+    This& operator[](const initializer_list<TensorIndexer> &slices);
 };
 
 
@@ -113,9 +114,9 @@ class Tensor<T, CPU> : public TensorBase<Tensor<T, CPU>, T, CPU> {
     friend class TensorBase<Tensor<T, CPU>, T, CPU>;
 
   private:
-    string sub_repr(const size_t d, const size_t offset) const;
-    void write_storage(const size_t offset, const size_t size, const T value) override;
-    void write_storage(const size_t offset, const size_t size, const T* values, const Device& src) override;
+    string sub_repr(const size_t &d, const size_t &offset) const;
+    void write_storage(const size_t &offset, const size_t &n, const T &value) override;
+    void write_storage(const size_t &offset, const size_t &n, const T* const &values, const Device& src) override;
 
   public:
     Tensor(const vector<size_t> &shape, const CPU &device = CPU()) : Base(shape, device) {}
@@ -130,8 +131,8 @@ class Tensor<T, GPU> : public TensorBase<Tensor<T, GPU>, T, GPU> {
     friend class TensorBase<Tensor<T, GPU>, T, GPU>;
 
   private:
-    void write_storage(const size_t offset, const size_t n, const T value) override;
-    void write_storage(const size_t offset, const size_t n, const T* values, const Device& src) override;
+    void write_storage(const size_t &offset, const size_t &n, const T &value) override;
+    void write_storage(const size_t &offset, const size_t &n, const T* const &values, const Device& src) override;
 
   public:
     Tensor(const vector<size_t> &shape, const GPU &device = GPU()) : Base(shape, device) {}

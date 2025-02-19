@@ -23,19 +23,19 @@ size_t numel_from_shape(const vector<size_t>& shape) {
     return accumulate(shape.begin(), shape.end(), 1, [](size_t a, size_t b) { return a * b; });
 }
 
-vector<size_t> base_strides_from_shape(const vector<size_t>& shape) {
-    vector<size_t> strides = vector<size_t>(shape.size(), 1);
+vector<size_t> base_stride_from_shape(const vector<size_t>& shape) {
+    vector<size_t> stride = vector<size_t>(shape.size(), 1);
     for (size_t i = 0; i < shape.size(); i++) {
         for (size_t j = i + 1; j < shape.size(); j++) {
-            strides[i] *= shape[j];
+            stride[i] *= shape[j];
         }
     }
-    return strides;
+    return stride;
 }
 
 template <typename Derived, typename T, typename D>
 TensorBase<Derived, T, D>::TensorBase(const vector<size_t> &shape, const D &device) : shape(shape) {
-    strides = base_strides_from_shape(shape);
+    stride = base_stride_from_shape(shape);
     offset = 0;
     storage = make_shared<Storage<T, D>>(numel_from_shape(shape), device);
 }
@@ -54,14 +54,14 @@ size_t TensorBase<Derived, T, D>::dim() const {
 
 
 template <typename Derived, typename T, typename D>
-bool TensorBase<Derived, T, D>::is_view() const {
-    return numel() != storage.get()->get_size();
+bool TensorBase<Derived, T, D>::is_contiguous() const {
+    return numel() != storage->get_size() && stride == base_stride_from_shape(shape);
 }
 
 
 template <typename Derived, typename T, typename D>
 Derived TensorBase<Derived, T, D>::copy() {
-    Derived tensor(shape, storage.get()->get_device());
+    Derived tensor(shape, storage->get_device());
     tensor.storage = storage;
     return tensor;
 }
@@ -69,9 +69,9 @@ Derived TensorBase<Derived, T, D>::copy() {
 
 template <typename Derived, typename T, typename D>
 Derived TensorBase<Derived, T, D>::clone() {
-    Derived tensor(shape, storage.get()->get_device());
-    if (!is_view()) { 
-        tensor.write_storage(0, numel(), storage.get()->get_data(), storage.get()->get_device());
+    Derived tensor(shape, storage->get_device());
+    if (!is_contiguous()) { 
+        tensor.write_storage(0, numel(), storage->get_data(), storage.get()->get_device());
     } else {
         throw runtime_error("view clone not implemented");
     } // TODO provide implementation for views
@@ -80,8 +80,8 @@ Derived TensorBase<Derived, T, D>::clone() {
 
 
 template <typename Derived, typename T, typename D>
-TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::fill(const T value) {
-    if (!is_view()) { 
+TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::fill(const T &value) {
+    if (!is_contiguous()) { 
         write_storage(0, this->numel(), value);
     } else {
         throw runtime_error("view fill not implemented");
@@ -91,11 +91,20 @@ TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::fill(const T value) {
 
 
 template <typename Derived, typename T, typename D>
+TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::contiguous() {
+    if (is_contiguous()) { 
+        // TODO
+    } // nothing to do fo views
+    return *this;
+}
+
+
+template <typename Derived, typename T, typename D>
 TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::reshape(const vector<size_t> &new_shape) {
     assert(numel_from_shape(new_shape) == numel());
-    if (!is_view()) { 
+    if (!is_contiguous()) { 
         shape = new_shape;
-        strides = base_strides_from_shape(shape);
+        stride = base_stride_from_shape(shape);
         // offset already 0
         return *this;
     } else {
@@ -121,13 +130,13 @@ string Tensor<T, CPU>::repr() const {
 
 
 template <typename T>
-string Tensor<T, CPU>::sub_repr(const size_t d, const size_t offset) const {
+string Tensor<T, CPU>::sub_repr(const size_t &d, const size_t &offset) const {
 
     string r = "[";
 
     if (d < this->shape.size() - 1) {
         for (size_t i = 0; i < this->shape[d]; i++) {
-            r += sub_repr(d + 1, i * this->strides[d]);
+            r += sub_repr(d + 1, i * this->stride[d]);
             if (i < this->shape[d] - 1) {
                 r += ",\n";
                 for (size_t j = 0; j < d + 1; j++) {
@@ -137,7 +146,7 @@ string Tensor<T, CPU>::sub_repr(const size_t d, const size_t offset) const {
         }
     } else { // d = dim
         for (size_t i = 0; i < this->shape[d]; i++) {
-            r += to_string((*this->storage)[this->offset + offset + i * this->strides[d]]);
+            r += to_string((*this->storage)[this->offset + offset + i * this->stride[d]]);
             if (i < this->shape[d] - 1) {
                 r += ", ";
             }
@@ -151,15 +160,15 @@ string Tensor<T, CPU>::sub_repr(const size_t d, const size_t offset) const {
 
 
 template <typename T>
-void Tensor<T, CPU>::write_storage(const size_t offset, const size_t n, const T value) {
-    T* start = this->storage.get()->get_data() + offset;
+void Tensor<T, CPU>::write_storage(const size_t &offset, const size_t &n, const T &value) {
+    T* start = this->storage->get_data() + offset;
     std::fill(start, start + n, value);
 }
 
 
 template <typename T>
-void Tensor<T, CPU>::write_storage(const size_t offset, const size_t n, const T* values, const Device& src) {
-    T* start = this->storage.get()->get_data() + offset;
+void Tensor<T, CPU>::write_storage(const size_t &offset, const size_t &n, const T* const &values, const Device& src) {
+    T* start = this->storage->get_data() + offset;
     if (static_cast<const CPU *>(&src)) {
         memcpy(start, values, n * sizeof(T));
     } else {
@@ -170,16 +179,16 @@ void Tensor<T, CPU>::write_storage(const size_t offset, const size_t n, const T*
 
 
 template <typename T>
-void Tensor<T, GPU>::write_storage(const size_t offset, const size_t n, const T value) {
-    T* start = this->storage.get()->get_data() + offset;
+void Tensor<T, GPU>::write_storage(const size_t &offset, const size_t &n, const T &value) {
+    T* start = this->storage->get_data() + offset;
     HIP_CHECK(hipMemset(start, value, n*sizeof(T)));
 }
 
 
 template <typename T>
-void Tensor<T, GPU>::write_storage(const size_t offset, const size_t n, const T* values, const Device& src) {
-    T *start = this->storage.get()->get_data() + offset;
-    GPU device = this->storage.get()->get_device();
+void Tensor<T, GPU>::write_storage(const size_t &offset, const size_t &n, const T* const &values, const Device& src) {
+    T *start = this->storage->get_data() + offset;
+    GPU device = this->storage->get_device();
     HIP_CHECK(hipSetDevice(device));
     if (static_cast<const CPU*>(&src)) {
         HIP_CHECK(hipMemcpy(start, values, n*sizeof(T), hipMemcpyHostToDevice));

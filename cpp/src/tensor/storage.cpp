@@ -7,14 +7,14 @@
 
 using namespace std;
 
-template <typename T> Storage<T, CPU>::Storage(const size_t size, const CPU& device) {
+template <typename T> Storage<T, CPU>::Storage(const size_t& size, const CPU& device) {
     this->size = size;
     this->device = device;
     this->data = new T[this->size];
 }
 
 
-template <typename T> Storage<T, GPU>::Storage(const size_t size, const GPU& device) {
+template <typename T> Storage<T, GPU>::Storage(const size_t& size, const GPU& device) {
     this->size = size;
     this->device = device;
     HIP_CHECK(hipSetDevice(this->device));
@@ -33,22 +33,25 @@ template <typename T> Storage<T, GPU>::~Storage() {
 }
 
 
-template <typename T, typename D> D StorageBase<T, D>::get_device() const {
+template <typename T, typename D> const D& StorageBase<T, D>::get_device() const {
     return device;
 }
 
 
-template <typename T, typename D> T* StorageBase<T, D>::get_data() const {
+template <typename T, typename D>  const T* const & StorageBase<T, D>::get_data() const {
     return data;
 }
 
+template <typename T, typename D>  T* const & StorageBase<T, D>::get_data() {
+    return data;
+}
 
-template <typename T, typename D> size_t StorageBase<T, D>::get_size() const {
+template <typename T, typename D> const size_t& StorageBase<T, D>::get_size() const {
     return size;
 }
 
 
-template <typename T> T Storage<T, CPU>::operator[](const int index) {
+template <typename T> T Storage<T, CPU>::operator[](const int& index) {
     assert(index < this->size);
 
     int i = index;

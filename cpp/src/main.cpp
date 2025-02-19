@@ -9,14 +9,9 @@ using namespace std;
 
 int main() {
 
-    Tensor<bool, CPU> tc = Tensor<bool, CPU>::full({10}, 5); 
+    Tensor<int, CPU> tc = Tensor<int, CPU>::full({10}, 5); 
     cout << tc.repr() << endl;
-    tc.reshape({5, 2});
-    cout << tc.repr() << endl;
-    tc.flatten();
-    cout << tc.repr() << endl;
-    tc.reshape({2, 5});
-    cout << tc.repr() << endl;
+    const int* data = tc.get_storage().get_data();
 
     return 0;
 }
