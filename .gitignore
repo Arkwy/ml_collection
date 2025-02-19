@@ -7,3 +7,4 @@ cpp/.cache/
 cpp/obj/
 cpp/bin/
 cpp/compile_commands.json
+cpp/test/

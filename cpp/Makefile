@@ -15,7 +15,7 @@ PSO := $(wildcard $(SRC_DIR)/pso/*.cpp)
 OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 # Compiler flags
-CXXFLAGS = -std=c++20 -O2 -Wall
+CXXFLAGS = -std=c++2b -O2 -Wall
 LDFLAGS =
 
 # Create necessary directories
