@@ -15,7 +15,7 @@ template <typename T, typename D> class StorageBase {
   public:
     const size_t& get_size() const;
     const D &get_device() const;
-    const T* const &get_data() const; // when called by const storages, i.e storage is retrieved from get_storage() of a tensor
+    const T* const &get_data() const = delete; // when called by const storages, i.e storage is retrieved from tensor.get_storage()
     T* const &get_data(); // when called by one of the owning tensor
 };
 

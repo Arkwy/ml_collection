@@ -9,9 +9,13 @@ using namespace std;
 
 int main() {
 
-    Tensor<int, CPU> tc = Tensor<int, CPU>::full({10}, 5); 
-    cout << tc.repr() << endl;
-    const int* data = tc.get_storage().get_data();
+    int* a;
+    {
+        vector<int> b({1, 2, 3, 4});
+        a = b.data();
+        cout << a[0] << endl;
+    }
+    cout << a[0] << endl;
 
     return 0;
 }

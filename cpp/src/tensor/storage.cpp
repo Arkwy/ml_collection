@@ -38,9 +38,9 @@ template <typename T, typename D> const D& StorageBase<T, D>::get_device() const
 }
 
 
-template <typename T, typename D>  const T* const & StorageBase<T, D>::get_data() const {
-    return data;
-}
+// template <typename T, typename D>  const T* const & StorageBase<T, D>::get_data() const {
+//     return data;
+// }
 
 template <typename T, typename D>  T* const & StorageBase<T, D>::get_data() {
     return data;
