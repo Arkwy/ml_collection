@@ -2,24 +2,29 @@
 #define DEVICE_H
 
 #include <cstddef>
+#include <hip/hip_runtime.h>
+#include <stdexcept>
 
-class Device {
-  protected:
-    int id;
+struct GPU {
+    const size_t id;
+    GPU(const size_t& id = 0) : id(check_id(id)){}
+    operator int() const {
+        return id;
+    }
 
-  public:
-    int get_id() const;
-    operator int() const;
+  private:
+    size_t check_id(const size_t &id) {
+        int device_count;
+        HIP_CHECK(hipGetDeviceCount(&device_count));
+        if (id >= device_count) {
+            throw std::invalid_argument("Device id greater than the number of available GPUs."); 
+        }
+
+        return id;
+    }
+
 };
 
-class GPU : public Device {
-  public:
-    GPU(const size_t id = 0);
-};
-
-class CPU : public Device {
-  public:
-    CPU();
-};
+struct CPU {};
 
 #endif
