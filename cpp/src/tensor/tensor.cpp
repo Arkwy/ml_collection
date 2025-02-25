@@ -55,13 +55,13 @@ size_t TensorBase<Derived, T, D>::dim() const {
 
 template <typename Derived, typename T, typename D>
 bool TensorBase<Derived, T, D>::is_contiguous() const {
-    return numel() != storage->get_size() && stride == base_stride_from_shape(shape);
+    return numel() != storage->size && stride == base_stride_from_shape(shape);
 }
 
 
 template <typename Derived, typename T, typename D>
 Derived TensorBase<Derived, T, D>::copy() {
-    Derived tensor(shape, storage->get_device());
+    Derived tensor(shape, storage->device);
     tensor.storage = storage;
     return tensor;
 }
@@ -69,9 +69,9 @@ Derived TensorBase<Derived, T, D>::copy() {
 
 template <typename Derived, typename T, typename D>
 Derived TensorBase<Derived, T, D>::clone() {
-    Derived tensor(shape, storage->get_device());
+    Derived tensor(shape, storage->device);
     if (!is_contiguous()) { 
-        tensor.write_storage(0, numel(), storage->get_data(), storage.get()->get_device());
+        tensor.write_storage(0, numel(), storage->data, storage->device);
     } else {
         throw runtime_error("view clone not implemented");
     } // TODO provide implementation for views
@@ -92,9 +92,9 @@ TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::fill(const T &value) {
 
 template <typename Derived, typename T, typename D>
 TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::contiguous() {
-    if (is_contiguous()) { 
+    if (!is_contiguous()) { 
         // TODO
-    } // nothing to do fo views
+    }
     return *this;
 }
 
@@ -161,48 +161,52 @@ string Tensor<T, CPU>::sub_repr(const size_t &d, const size_t &offset) const {
 
 template <typename T>
 void Tensor<T, CPU>::write_storage(const size_t &offset, const size_t &n, const T &value) {
-    T* start = this->storage->get_data() + offset;
+    T* start = this->storage->data + offset;
     std::fill(start, start + n, value);
 }
 
 
 template <typename T>
-void Tensor<T, CPU>::write_storage(const size_t &offset, const size_t &n, const T* const &values, const Device& src) {
-    T* start = this->storage->get_data() + offset;
-    if (static_cast<const CPU *>(&src)) {
-        memcpy(start, values, n * sizeof(T));
-    } else {
-        HIP_CHECK(hipSetDevice(src));
-        HIP_CHECK(hipMemcpy(start, values, n*sizeof(T), hipMemcpyDeviceToHost));
-    }
+void Tensor<T, CPU>::write_storage(const size_t &offset, const size_t &n, const T* const &values, const CPU& src) {
+    T* start = this->storage->data + offset;
+    memcpy(start, values, n * sizeof(T));
 }
 
 
 template <typename T>
+void Tensor<T, CPU>::write_storage(const size_t &offset, const size_t &n, const T* const &values, const GPU& src) {
+    T* start = this->storage->data + offset;
+    HIP_CHECK(hipSetDevice(src));
+    HIP_CHECK(hipMemcpy(start, values, n*sizeof(T), hipMemcpyDeviceToHost));
+}
+
+template <typename T>
 void Tensor<T, GPU>::write_storage(const size_t &offset, const size_t &n, const T &value) {
-    T* start = this->storage->get_data() + offset;
+    T* start = this->storage->data + offset;
     HIP_CHECK(hipMemset(start, value, n*sizeof(T)));
 }
 
 
 template <typename T>
-void Tensor<T, GPU>::write_storage(const size_t &offset, const size_t &n, const T* const &values, const Device& src) {
-    T *start = this->storage->get_data() + offset;
-    GPU device = this->storage->get_device();
-    HIP_CHECK(hipSetDevice(device));
-    if (static_cast<const CPU*>(&src)) {
-        HIP_CHECK(hipMemcpy(start, values, n*sizeof(T), hipMemcpyHostToDevice));
-    } else {
-        if (src.get_id() == device.get_id()) {
-            HIP_CHECK(hipMemcpy(start, values, n*sizeof(T), hipMemcpyDeviceToDevice));
-        } else {
-            throw runtime_error("Data copy between different GPUs not implemented yet");
-            // TODO
-        }
-    }
+void Tensor<T, GPU>::write_storage(const size_t &offset, const size_t &n, const T* const &values, const CPU& src) {
+    T *start = this->storage->data + offset;
+    HIP_CHECK(hipSetDevice(this->storage->device));
+    HIP_CHECK(hipMemcpy(start, values, n*sizeof(T), hipMemcpyHostToDevice));
 }
 
 
+template <typename T>
+void Tensor<T, GPU>::write_storage(const size_t &offset, const size_t &n, const T* const &values, const GPU& src) {
+    T *start = this->storage->data + offset;
+    GPU device = this->storage->device;
+    HIP_CHECK(hipSetDevice(device));
+    if (src.id == device.id) {
+        HIP_CHECK(hipMemcpy(start, values, n*sizeof(T), hipMemcpyDeviceToDevice));
+    } else {
+        throw runtime_error("Data copy between different GPUs not implemented yet");
+        // TODO
+    }
+}
 
 #define INSTANTIATE_TENSOR(T, D)                      \
     template class TensorBase<Tensor<T, D>, T, D>;    \

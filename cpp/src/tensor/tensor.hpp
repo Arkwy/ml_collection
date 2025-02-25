@@ -32,17 +32,18 @@ class TensorBase {
     TensorBase(const vector<size_t> &shape, const D &device = D());
 
     virtual void write_storage(const size_t& offset, const size_t& n, const T& value) = 0;
-    virtual void write_storage(const size_t& offset, const size_t& n, const T* const &values, const Device& src) = 0;
+    virtual void write_storage(const size_t& offset, const size_t& n, const T* const &values, const CPU& src) = 0;
+    virtual void write_storage(const size_t& offset, const size_t& n, const T* const &values, const GPU& src) = 0;
 
   public:
     size_t numel() const;
     size_t dim() const;
     bool is_contiguous() const;
-    const Storage<T, D>& get_storage() const {
-        return *storage.get();
+  const shared_ptr<Storage<T, D>> get_storage() const {
+        return storage;
     }
     const D& get_device() const  {
-        return storage->get_device();
+        return storage->device;
     }
     const vector<size_t>& get_shape() const {
         return shape;
@@ -116,7 +117,8 @@ class Tensor<T, CPU> : public TensorBase<Tensor<T, CPU>, T, CPU> {
   private:
     string sub_repr(const size_t &d, const size_t &offset) const;
     void write_storage(const size_t &offset, const size_t &n, const T &value) override;
-    void write_storage(const size_t &offset, const size_t &n, const T* const &values, const Device& src) override;
+    void write_storage(const size_t &offset, const size_t &n, const T* const &values, const CPU& src) override;
+    void write_storage(const size_t &offset, const size_t &n, const T* const &values, const GPU& src) override;
 
   public:
     Tensor(const vector<size_t> &shape, const CPU &device = CPU()) : Base(shape, device) {}
@@ -132,7 +134,8 @@ class Tensor<T, GPU> : public TensorBase<Tensor<T, GPU>, T, GPU> {
 
   private:
     void write_storage(const size_t &offset, const size_t &n, const T &value) override;
-    void write_storage(const size_t &offset, const size_t &n, const T* const &values, const Device& src) override;
+    void write_storage(const size_t &offset, const size_t &n, const T* const &values, const CPU& src) override;
+    void write_storage(const size_t &offset, const size_t &n, const T* const &values, const GPU& src) override;
 
   public:
     Tensor(const vector<size_t> &shape, const GPU &device = GPU()) : Base(shape, device) {}

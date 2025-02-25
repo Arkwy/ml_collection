@@ -5,6 +5,8 @@
 #include <hip/hip_runtime.h>
 #include <stdexcept>
 
+#include "../utils/hip_utils.hpp"
+
 struct GPU {
     const size_t id;
     GPU(const size_t& id = 0) : id(check_id(id)){}

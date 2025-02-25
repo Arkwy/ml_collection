@@ -8,14 +8,8 @@ using namespace std;
 
 
 int main() {
-
-    int* a;
-    {
-        vector<int> b({1, 2, 3, 4});
-        a = b.data();
-        cout << a[0] << endl;
-    }
-    cout << a[0] << endl;
+  Tensor<int, CPU> t1 = Tensor<int, CPU>::arange(10).reshape({2, 5});
+    cout << t1.repr() << endl;
 
     return 0;
 }
