@@ -8,8 +8,9 @@ using namespace std;
 
 
 int main() {
-  Tensor<int, CPU> t1 = Tensor<int, CPU>::arange(10).reshape({2, 5});
+  Tensor<int, CPU, 1> t1 = Tensor<int, CPU, 1>::arange(10);
     cout << t1.repr() << endl;
+    // cout << t1.reshape({10}).repr() << endl;
 
     return 0;
 }
