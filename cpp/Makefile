@@ -18,6 +18,8 @@ OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 CXXFLAGS = -std=c++2b -O2 -Wall
 LDFLAGS =
 
+LOG_LEVEL := LOG_LEVEL_DEBUG
+
 # Create necessary directories
 $(shell mkdir -p $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/utils $(OBJ_DIR)/tensor $(OBJ_DIR)/pso)
 
@@ -30,7 +32,7 @@ $(TARGET): $(OBJS)
 
 # Compile source files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(HIPCC) $(CXXFLAGS) -c -o $@ $<
+	$(HIPCC) $(CXXFLAGS) -DLOG_LEVEL=$(LOG_LEVEL) -c -o $@ $<
 
 # Clean build files
 clean:

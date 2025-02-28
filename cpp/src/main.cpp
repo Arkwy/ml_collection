@@ -10,16 +10,18 @@ using namespace std;
 
 int main() {
     Tensor<int, CPU> t1 = Tensor<int, CPU>::arange(12);
-    t1.reshape({3, 2, 2});
-    cout << t1.repr() << endl;
-    for (std::size_t i = 0; i < t1.dim(); i++) {
-      cout << t1.get_shape()[i] << ", ";
-    }
-    cout << endl;
-    for (std::size_t i = 0; i < t1.dim(); i++) {
-      cout << t1.get_stride()[i] << ", ";
-    }
-    cout << endl;
+
+    t1.reshape({2, 2, 3});
+    cout<< endl << t1.repr() << endl;
+
+    t1.permute({2, 1, 0});
+    cout<< endl << t1.repr() << endl;
+
+    t1.reshape({2,2,3});
+    cout<< endl << t1.repr() << endl;
+
+    Tensor<int, CPU> t2 = t1.clone();
+    cout<< endl << t2.repr() << endl;
 
     return 0;
 }

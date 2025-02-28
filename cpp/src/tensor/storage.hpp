@@ -3,8 +3,10 @@
 
 #include <cstddef>
 #include <hip/hip_runtime.h>
+#include <iostream>
 
 #include "../utils/hip_utils.hpp"
+#include "../utils/logger.hpp"
 #include "device.hpp"
 
 
@@ -23,10 +25,13 @@ template <typename T> struct Storage<T, CPU> {
     const size_t size;
     T* const data;
 
-    Storage(const size_t& size, const CPU& device = CPU()) : device(device), size(size), data(init_data(size)) {}
+	Storage(const size_t& size, const CPU& device = CPU()) : device(device), size(size), data(init_data(size)) {
+        LOG(LOG_LEVEL_DEBUG, "CPU storage %p created", this);
+	}
     Storage(Storage<T, CPU>& storage) = delete;
     ~Storage() {
         delete[] this->data;
+        LOG(LOG_LEVEL_DEBUG, "CPU storage %p deleted", this);
     }
     T operator[](const int& index) {
         assert(index < this->size);
@@ -54,11 +59,14 @@ template <typename T> struct Storage<T, GPU> {
     const size_t size;
     T* const data;
 
-    Storage(const size_t& size, const GPU& device = GPU()) : device(device), size(size), data(init_data(size, device)) {}
+	Storage(const size_t& size, const GPU& device = GPU()) : device(device), size(size), data(init_data(size, device)) {
+        LOG(LOG_LEVEL_DEBUG, "GPU storage %p created", this);
+	}
     Storage(Storage<T, GPU>& storage) = delete;
     ~Storage() {
         HIP_CHECK(hipSetDevice(this->device));
         HIP_CHECK(hipFree(this->data));
+        LOG(LOG_LEVEL_DEBUG, "GPU storage %p deleted", this);
     };
 private:
     T* const init_data(const size_t& size, const GPU& device) const {

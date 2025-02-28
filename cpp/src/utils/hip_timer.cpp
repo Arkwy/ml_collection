@@ -21,7 +21,7 @@ void HIPTimer::reset() {
 
 void HIPTimer::start() {
     if (running) {
-        warn("Timer already started.");
+        LOG(LOG_LEVEL_WARNING, "Timer already started.");
         return;
     }
     HIP_CHECK(hipEventRecord(hip_start, NULL));
@@ -31,7 +31,7 @@ void HIPTimer::start() {
 
 void HIPTimer::stop() {
     if (!running) {
-        warn("Timer not started.");
+        LOG(LOG_LEVEL_WARNING, "Timer not started.");
         return;
     }
     HIP_CHECK(hipEventRecord(hip_stop, NULL));

@@ -1,4 +1,13 @@
+BasedOnStyle: Google
 IndentWidth: 4
+TabWidth: 4
+UseTab: Always
 ColumnLimit: 120
+AccessModifierOffset: -2
+AllowShortFunctionsOnASingleLine: None
+BinPackArguments: false
+BinPackParameters: false
+AlignAfterOpenBracket: BlockIndent
+AllowAllArgumentsOnNextLine: false
 AlwaysBreakTemplateDeclarations: true
 MaxEmptyLinesToKeep: 3
