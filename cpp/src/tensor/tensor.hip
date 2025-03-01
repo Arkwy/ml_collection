@@ -22,7 +22,7 @@ __global__ void write_to_contiguous(const Tensor<T>& src, const Tensor<T>& dest)
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     int z = blockIdx.z * blockDim.z + threadIdx.z;
 
-    // dest is contiguous so storage index is straight forward
+    // dest is contiguous so storage index is straightforward
 	int dest_idx = x * y * z;
 
     // not src ...
