@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [-std=c++2b, -x, hip]
+  Add: [-D__HIP_PLATFORM_AMD__, -std=c++2b, -x, hip]

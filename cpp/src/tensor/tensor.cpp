@@ -1,6 +1,7 @@
 #include "tensor.hpp"
 
 #include <hip/amd_detail/amd_hip_runtime.h>
+#include <hip/amd_detail/amd_warp_functions.h>
 #include <hip/driver_types.h>
 #include <hip/hip_runtime.h>
 #include <sys/syscall.h>
@@ -20,8 +21,11 @@
 
 #include "../utils/hip_utils.hpp"
 #include "storage.hpp"
+#include "tensor.hip"
 
 using namespace std;
+
+// ###################################### UTILS ###########################################
 
 size_t numel_from_shape(const vector<size_t> &shape) {
 	return accumulate(shape.begin(), shape.end(), 1, [](size_t a, size_t b) { return a * b; });
@@ -127,6 +131,8 @@ Generator<pair<size_t, size_t>> indexes(
 }
 
 
+// ###################################### BASE ###########################################
+
 template <typename Derived, typename T, typename D>
 TensorBase<Derived, T, D>::TensorBase(const vector<size_t> &shape, const D &device) : shape(shape) {
 	stride = base_stride_from_shape(shape);
@@ -154,64 +160,14 @@ bool TensorBase<Derived, T, D>::is_contiguous() const {
 
 
 template <typename Derived, typename T, typename D>
-Derived TensorBase<Derived, T, D>::clone() {
-    Derived tensor(static_cast<Derived&>(*this));
-	if (!tensor.is_contiguous()) {
-        return tensor.contiguous();
+Derived TensorBase<Derived, T, D>::clone() const {
+	Derived tensor(static_cast<const Derived&>(*this));
+	if (!this->is_contiguous()) {
+		return tensor.contiguous();
 	}
 	tensor.storage = make_shared<Storage<T, D>>(tensor.numel(), tensor.get_device());
-    tensor.write_storage(0, tensor.numel(), this->storage->data, this->get_device());
-    return tensor;
-}
-
-template <typename T>
-Tensor<T, CPU> &Tensor<T, CPU>::fill(const T* &values) {
-	// TODO
-	return *this;
-}
-
-
-template <typename T>
-Tensor<T, GPU> &Tensor<T, GPU>::fill(const T* &values) {
-	// TODO
-	return *this;
-}
-
-template <typename T>
-Tensor<T, CPU> &Tensor<T, CPU>::fill(const T &value) {
-	if (this->numel() == this->storage->size) {
-		write_storage(0, this->numel(), value);
-	} else {
-
-	}  // TODO provide implementation for views
-	return *this;
-}
-
-
-template <typename T>
-Tensor<T, GPU> &Tensor<T, GPU>::fill(const T &value) {
-	if (this->numel() == this->storage->size) {
-		write_storage(0, this->numel(), value);
-	} else {
-
-	}  // TODO provide implementation for views
-	return *this;
-}
-
-template <typename Derived, typename T, typename D>
-TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::reshape(const vector<size_t> &new_shape) {
-    // reshape can only be done for contiguous tensors (maybe not only but torch seems to do it that way)
-	assert(numel_from_shape(new_shape) == numel());
-	if (shape != new_shape) {
-		if (is_contiguous()) {
-			shape = new_shape;
-			stride = base_stride_from_shape(shape);
-		} else {
-			this->contiguous();
-			this->reshape(new_shape);
-		}
-	}
-	return *this;
+	tensor.write_storage(0, tensor.numel(), this->storage->data, this->get_device());
+	return tensor;
 }
 
 template <typename Derived, typename T, typename D>
@@ -221,7 +177,7 @@ TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::flatten() {
 
 template <typename Derived, typename T, typename D>
 TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::permute(const vector<size_t> &permutations) {
-    // permutation is purely reordering shape and stride
+	// permutation is purely reordering shape and stride
 	assert(permutations.size() == this->dim());
 	vector<size_t> new_stride(this->dim());
 	vector<size_t> new_shape(this->dim());
@@ -237,19 +193,56 @@ TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::permute(const vector<size_
 
 template <typename Derived, typename T, typename D>
 TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::expand(const vector<size_t> &expanded_shape) {
-    // expanded dim -> stride[dim] = 0
-    // expandable dims: shape[dim] = 1 or additional dim(s) placed before all others
+	// expanded dim -> stride[dim] = 0
+	// expandable dims: shape[dim] = 1 or additional dim(s) placed before all others
 	size_t size_diff = expanded_shape.size() - shape.size();
 	assert(size_diff >= 0);
-    vector<size_t> new_stride(expanded_shape.size(), 0);
+	vector<size_t> new_stride(expanded_shape.size(), 0);
 	for (size_t i = 0; i < shape.size(); i++) {
 		assert(expanded_shape[i + size_diff] == shape[i] || shape[i] == 1);
 		if (expanded_shape[i + size_diff] == shape[i]) {
-            new_stride[i + size_diff] = stride[i]; 
+			new_stride[i + size_diff] = stride[i];
 		}
 	}
 	stride = new_stride;
-    shape = expanded_shape;
+	shape = expanded_shape;
+	return *this;
+}
+
+
+template <typename Derived, typename T, typename D>
+TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::reshape(const vector<size_t> &new_shape) {
+	// reshape can only be done for contiguous tensors (maybe not only but torch seems to do it that way)
+	assert(numel_from_shape(new_shape) == numel());
+	if (shape != new_shape) {
+		if (is_contiguous()) {
+			shape = new_shape;
+			stride = base_stride_from_shape(shape);
+		} else {
+			this->contiguous();
+			this->reshape(new_shape);
+		}
+	}
+	return *this;
+}
+
+
+
+// ###################################### CPU ###########################################
+
+
+template <typename T>
+Tensor<T, CPU> &Tensor<T, CPU>::fill(const T *&values) {
+	// TODO
+	return *this;
+}
+
+template <typename T>
+Tensor<T, CPU> &Tensor<T, CPU>::fill(const T &value) {
+	if (this->numel() == this->storage->size) {
+		write_storage(0, this->numel(), value);
+	} else {
+	}  // TODO provide implementation for views
 	return *this;
 }
 
@@ -304,6 +297,60 @@ void Tensor<T, CPU>::write_storage(const size_t &offset, const size_t &n, const 
 	HIP_CHECK(hipMemcpy(start, values, n * sizeof(T), hipMemcpyDeviceToHost));
 }
 
+
+template <typename T>
+Tensor<T, CPU> &Tensor<T, CPU>::contiguous() {
+	if (!this->is_contiguous()) {
+		shared_ptr<Storage<T, CPU>> new_storage = make_shared<Storage<T, CPU>>(this->numel(), this->storage->device);
+
+		for (pair<size_t, size_t> idxs : indexes(this->shape, this->stride, this->offset)) {
+			new_storage->data[idxs.first] = this->storage->data[idxs.second];
+		}
+
+		this->storage = new_storage;
+		this->stride = base_stride_from_shape(this->shape);
+		this->offset = 0;
+	}
+	return *this;
+}
+
+template <typename T>
+Tensor<T, CPU> Tensor<T, CPU>::to(const CPU &device) const {
+    return *this;
+}
+
+template <typename T>
+Tensor<T, GPU> Tensor<T, CPU>::to(const GPU &device) const {
+	Tensor<T, GPU> new_tensor(this->shape, device);
+    const T* data;
+	if (!this->is_contiguous()) {
+        Tensor<T, CPU> clone = this->clone();
+        data = clone.get_storage()->data;
+	} else {
+        data = this->get_storage()->data;
+	}
+    new_tensor.write_storage(0, new_tensor.numel(), data, this->get_device());
+    return new_tensor;
+}
+
+// ###################################### GPU ###########################################
+
+template <typename T>
+Tensor<T, GPU> &Tensor<T, GPU>::fill(const T *&values) {
+	// TODO
+	return *this;
+}
+
+
+template <typename T>
+Tensor<T, GPU> &Tensor<T, GPU>::fill(const T &value) {
+	if (this->numel() == this->storage->size) {
+		write_storage(0, this->numel(), value);
+	} else {
+	}  // TODO provide implementation for views
+	return *this;
+}
+
 template <typename T>
 void Tensor<T, GPU>::write_storage(const size_t &offset, const size_t &n, const T &value) {
 	T *start = this->storage->data + offset;
@@ -331,27 +378,84 @@ void Tensor<T, GPU>::write_storage(const size_t &offset, const size_t &n, const 
 }
 
 template <typename T>
-Tensor<T, CPU> &Tensor<T, CPU>::contiguous() {
+Tensor<T, GPU> &Tensor<T, GPU>::contiguous() {
 	if (!this->is_contiguous()) {
-		shared_ptr<Storage<T, CPU>> new_storage = make_shared<Storage<T, CPU>>(this->numel(), this->storage->device);
+		shared_ptr<Storage<T, GPU>> new_storage = make_shared<Storage<T, GPU>>(this->numel(), this->storage->device);
+		vector<size_t> new_stride = base_stride_from_shape(this->shape);
 
-		for (pair<size_t, size_t> idxs : indexes(this->shape, this->stride, this->offset)) {
-			new_storage->data[idxs.first] = this->storage->data[idxs.second];
-		}
+		HIP_CHECK(hipSetDevice(this->get_device().id));
+
+		size_t dim = this->dim();
+        size_t size_bytes = dim * sizeof(size_t);
+        size_t* device_shape, *device_src_stride, *device_dest_stride;
+        HIP_CHECK(hipMalloc(&device_shape, size_bytes));
+        HIP_CHECK(hipMalloc(&device_src_stride, size_bytes));
+        HIP_CHECK(hipMalloc(&device_dest_stride, size_bytes));
+
+        HIP_CHECK(hipMemcpy(device_shape, this->shape.data(), size_bytes ,hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(device_src_stride, this->stride.data(), size_bytes ,hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(device_dest_stride, new_stride.data(), size_bytes ,hipMemcpyHostToDevice));
+        
+		const HIPTensor<T>
+			src{this->storage->data, dim, this->numel(), device_shape, device_src_stride, this->offset};
+		const HIPTensor<T> dest{new_storage->data, dim, this->numel(), device_shape, device_dest_stride, 0};
+        hipPointerAttribute_t attributes;
+        HIP_CHECK(hipPointerGetAttributes(&attributes, src.data));
+        HIP_CHECK(hipPointerGetAttributes(&attributes, dest.data));
+
+
+        hipDeviceProp_t prop;
+        HIP_CHECK(hipGetDeviceProperties(&prop, this->get_device().id));
+        int max_threads_per_block = prop.maxThreadsPerBlock;
+        int warp_size = prop.warpSize;
+
+        int threads_per_block = min(max_threads_per_block, ((this->numel() + warp_size - 1) / warp_size) * warp_size);
+        dim3 block_dim(threads_per_block, 1, 1);
+        dim3 grid_dim((this->numel() + threads_per_block - 1) / threads_per_block, 1, 1);
+
+		write_to_contiguous<T><<<grid_dim, block_dim>>>(src, dest);
+        HIP_CHECK(hipDeviceSynchronize());
+
+        HIP_CHECK(hipFree(device_shape));
+        HIP_CHECK(hipFree(device_src_stride));
+        HIP_CHECK(hipFree(device_dest_stride));
 
 		this->storage = new_storage;
-		this->stride = base_stride_from_shape(this->shape);
+		this->stride = new_stride;
 		this->offset = 0;
 	}
 	return *this;
 }
 
 template <typename T>
-Tensor<T, GPU> &Tensor<T, GPU>::contiguous() {
+Tensor<T, CPU> Tensor<T, GPU>::to(const CPU &device) const {
+	Tensor<T, CPU> new_tensor(this->shape, device);
+    const T* data;
 	if (!this->is_contiguous()) {
-		this->storage = make_shared<Storage<T, GPU>>(this->numel(), this->storage->device);
+        Tensor<T, GPU> clone = this->clone();
+        data = clone.get_storage()->data;
+	} else {
+        data = this->get_storage()->data;
 	}
-	return *this;
+    new_tensor.write_storage(0, new_tensor.numel(), data, this->get_device());
+    return new_tensor;
+}
+
+template <typename T>
+Tensor<T, GPU> Tensor<T, GPU>::to(const GPU &device) const {
+	if (device.id == this->get_device().id) {
+        return *this;
+	}
+	Tensor<T, GPU> new_tensor(this->shape, device);
+    const T* data;
+	if (!this->is_contiguous()) {
+        Tensor<T, GPU> clone = this->clone();
+        data = clone.get_storage()->data;
+	} else {
+        data = this->get_storage()->data;
+	}
+    new_tensor.write_storage(0, new_tensor.numel(), data, this->get_device());
+    return new_tensor;
 }
 
 #define INSTANTIATE_TENSOR(T, D)                   \

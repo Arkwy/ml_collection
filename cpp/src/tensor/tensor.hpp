@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
-#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -22,6 +21,9 @@ struct Expansion {};
 struct NewDim {};
 
 using TensorIndexer = variant<int, FullSlice, Slice, Expansion, NewDim>;
+
+template <typename T, typename D>
+class Tensor;
 
 template <typename Derived, typename T, typename D>
 class TensorBase {
@@ -84,28 +86,15 @@ class TensorBase {
 		tensor.write_storage(0, n, range.data(), CPU());
 		return tensor;
 	}
-	// template <typename oT, typename oD>
-	// static Derived from(const Tensor<oT, oD>& other) requires (!std::same_as<T, bool>) {
-	//     Derived tensor(other.get_shape(), other.get_storage());
-	//     if (!other.is_view()) {
-	//         if constexpr (std::is_same<T, oT>::value) {
-	//             tensor.write_storage(0, tensor.numel(), other.get_storage().get()->get_data(), other.get_device());
-	//         } else {
-	//             throw runtime_error("from not implemented for different data types");
-	//         }
-	//     } else {
-	//         throw runtime_error("view from not implemented");
-	//     }
-	//     return tensor;
-	// }
-	Derived clone(); // deep copy
+	Derived clone() const; // deep copy
 	virtual This &contiguous() = 0;
 	virtual This &fill(const T &value) = 0;
     virtual This &fill(const T *&values) = 0;
+    virtual Tensor<T, CPU> to(const CPU& device) const = 0;
+    virtual Tensor<T, GPU> to(const GPU& device) const = 0;
 	This &reshape(const vector<size_t> &new_shape);
 	This &permute(const vector<size_t> &permutations);
 	This &expand(const vector<size_t> &expanded_shape);
-	// This& expand(const vector<size_t>& new_shape);
 	This &flatten();
 	This &operator[](const initializer_list<TensorIndexer> &slices);
 };
@@ -122,6 +111,7 @@ class Tensor<T, CPU> : public TensorBase<Tensor<T, CPU>, T, CPU> {
 	using Base = TensorBase<Tensor<T, CPU>, T, CPU>;
 	using This = Tensor<T, CPU>;
 	friend class TensorBase<Tensor<T, CPU>, T, CPU>;
+	friend class Tensor<T, GPU>;
 
   private:
 	string sub_repr(const size_t &d, const size_t &offset) const;
@@ -135,6 +125,8 @@ class Tensor<T, CPU> : public TensorBase<Tensor<T, CPU>, T, CPU> {
 	This &contiguous() override;
 	This &fill(const T &value) override;
 	This &fill(const T *&values) override;
+    Tensor<T, CPU> to(const CPU& device) const override;
+    Tensor<T, GPU> to(const GPU& device) const override;
 	string repr() const;
 };
 
@@ -145,6 +137,7 @@ class Tensor<T, GPU> : public TensorBase<Tensor<T, GPU>, T, GPU> {
 	using Base = TensorBase<Tensor<T, GPU>, T, GPU>;
 	using This = Tensor<T, GPU>;
 	friend class TensorBase<Tensor<T, GPU>, T, GPU>;
+	friend class Tensor<T, CPU>;
 
   private:
 	void write_storage(const size_t &offset, const size_t &n, const T &value) override;
@@ -157,6 +150,8 @@ class Tensor<T, GPU> : public TensorBase<Tensor<T, GPU>, T, GPU> {
 	This &contiguous() override;
 	This &fill(const T &value) override;
 	This &fill(const T *&values) override;
+    Tensor<T, CPU> to(const CPU& device) const override;
+    Tensor<T, GPU> to(const GPU& device) const override;
 };
 
 

@@ -1,44 +1,39 @@
+#include <hip/amd_detail/amd_hip_runtime.h>
 #include <hip/hip_runtime.h>
 
 
 template <typename T>
-struct Tensor {
+struct HIPTensor {
 	T* const data;
 	const size_t dim;
 	const size_t numel;
-    const size_t* const shape;
+	const size_t* const shape;
 	const size_t* const stride;
-    const size_t offset;
+	const size_t offset;
 };
 
 
 
 template <typename T>
-__global__ void write_to_contiguous(const Tensor<T>& src, const Tensor<T>& dest) {
+__global__ void write_to_contiguous(HIPTensor<T> src,HIPTensor<T> dest) {
+	// assumes dim, numel and shape of src and dest are the sames
 
-    // assumes dim, numel and shape of src and dest are the sames
+    assert(blockDim.y == 1 && blockDim.z == 1);
+    assert(blockIdx.y == 0 && blockIdx.z == 0);
+    assert(threadIdx.y == 0 && threadIdx.z == 0);
 
-	int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    int z = blockIdx.z * blockDim.z + threadIdx.z;
+	int thread_idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int dest_idx = thread_idx;
 
-    // dest is contiguous so storage index is straightforward
-	int dest_idx = x * y * z;
-
-    // not src
-	int src_idx = src.offset + x * src.stride[0] + y * src.stride[1];
-	if (src.dim == 3) {
-		src_idx += z * src.stride[1];
-		dest_idx += z * dest.stride[1];
-	} else if (src.dim > 3) {
-		for (size_t i = 2; i < src.dim; i++) {
-			size_t q = z / dest.stride[i];
-            src_idx += q * src.stride[i];
-            z -= q * dest.stride[i];
-		}
+	int src_idx = 0;
+	for (size_t i = 0; i < src.dim; i++) {
+		size_t q = thread_idx / dest.stride[i];
+		src_idx += q * src.stride[i];
+		thread_idx -= q * dest.stride[i];
 	}
-
+    
+    // printf("src: %d, dest: %d\n", src_idx, dest_idx);
 	if (dest_idx < src.numel) {
-        dest[dest_idx] = src[src_idx];
+		dest.data[dest_idx] = src.data[src_idx];
 	}
 }
