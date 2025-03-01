@@ -31,7 +31,7 @@ __global__ void write_to_contiguous(const Tensor<T>& src, const Tensor<T>& dest)
 		src_idx += z * src.stride[1];
 		dest_idx += z * dest.stride[1];
 	} else if (src.dim > 3) { // especially if dim > 3.
-		for (size_t i = 3; i < src.dim; i++) {
+		for (size_t i = 2; i < src.dim; i++) {
 			size_t q = z / dest.stride[i];
             src_idx += q * src.stride[i];
             z -= q * dest.stride[i];
