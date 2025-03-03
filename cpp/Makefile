@@ -24,7 +24,11 @@ LOG_LEVEL := LOG_LEVEL_DEBUG
 $(shell mkdir -p $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/utils $(OBJ_DIR)/tensor $(OBJ_DIR)/pso)
 
 # Default target
-all: $(TARGET)
+build: $(TARGET)
+
+# Build and run
+brun: build
+	./$(BIN_DIR)/main
 
 # Build executable
 $(TARGET): $(OBJS)
@@ -38,4 +42,4 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
-.PHONY: all clean
+.PHONY: build run clean

@@ -232,8 +232,14 @@ TensorBase<Derived, T, D> &TensorBase<Derived, T, D>::reshape(const vector<size_
 
 
 template <typename T>
-Tensor<T, CPU> &Tensor<T, CPU>::fill(const T *&values) {
-	// TODO
+Tensor<T, CPU> &Tensor<T, CPU>::fill(const T* const &values) {
+	if (this->numel() == this->storage->size) {
+		write_storage(0, this->numel(), values, CPU());
+	} else {
+		for (pair<size_t, size_t> idxs : indexes(this->shape, this->stride, this->offset)) {
+            this->storage->data[idxs.second] = values[idxs.first];
+		}
+	}
 	return *this;
 }
 
@@ -242,7 +248,10 @@ Tensor<T, CPU> &Tensor<T, CPU>::fill(const T &value) {
 	if (this->numel() == this->storage->size) {
 		write_storage(0, this->numel(), value);
 	} else {
-	}  // TODO provide implementation for views
+		for (pair<size_t, size_t> idxs : indexes(this->shape, this->stride, this->offset)) {
+            this->storage->data[idxs.second] = value;
+		}
+	}
 	return *this;
 }
 
@@ -336,8 +345,52 @@ Tensor<T, GPU> Tensor<T, CPU>::to(const GPU &device) const {
 // ###################################### GPU ###########################################
 
 template <typename T>
-Tensor<T, GPU> &Tensor<T, GPU>::fill(const T *&values) {
-	// TODO
+Tensor<T, GPU> &Tensor<T, GPU>::fill(const T * const &values) {
+	if (this->numel() == this->storage->size) {
+		write_storage(0, this->numel(), values, CPU());
+	} else {
+		vector<size_t> default_stride = base_stride_from_shape(this->shape);
+        T* device_values;
+		HIP_CHECK(hipSetDevice(this->get_device().id));
+
+		size_t dim = this->dim();
+        size_t size_bytes = dim * sizeof(size_t);
+        size_t* device_shape, *device_src_stride, *device_dest_stride;
+        HIP_CHECK(hipMalloc(&device_shape, size_bytes));
+        HIP_CHECK(hipMalloc(&device_src_stride, size_bytes));
+        HIP_CHECK(hipMalloc(&device_dest_stride, size_bytes));
+        HIP_CHECK(hipMalloc(&device_values, this->numel() * sizeof(T)));
+
+        HIP_CHECK(hipMemcpy(device_shape, this->shape.data(), size_bytes,hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(device_src_stride, this->stride.data(), size_bytes,hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(device_dest_stride, default_stride.data(), size_bytes,hipMemcpyHostToDevice));
+        HIP_CHECK(hipMemcpy(device_values, values, this->numel() * sizeof(T),hipMemcpyHostToDevice));
+        
+		const HIPTensor<T>
+			dest{ this->storage->data, dim, this->numel(), device_shape, device_src_stride, this->offset };
+		const HIPTensor<T> src{ device_values, dim, this->numel(), device_shape, device_dest_stride, 0 };
+        hipPointerAttribute_t attributes;
+        HIP_CHECK(hipPointerGetAttributes(&attributes, src.data));
+        HIP_CHECK(hipPointerGetAttributes(&attributes, dest.data));
+
+
+        hipDeviceProp_t prop;
+        HIP_CHECK(hipGetDeviceProperties(&prop, this->get_device().id));
+        int max_threads_per_block = prop.maxThreadsPerBlock;
+        int warp_size = prop.warpSize;
+
+        int threads_per_block = min(max_threads_per_block, ((this->numel() + warp_size - 1) / warp_size) * warp_size);
+        dim3 block_dim(threads_per_block, 1, 1);
+        dim3 grid_dim((this->numel() + threads_per_block - 1) / threads_per_block, 1, 1);
+
+		write_from_contiguous<T><<<grid_dim, block_dim>>>(src, dest);
+        HIP_CHECK(hipDeviceSynchronize());
+
+        HIP_CHECK(hipFree(device_shape));
+        HIP_CHECK(hipFree(device_src_stride));
+        HIP_CHECK(hipFree(device_dest_stride));
+        HIP_CHECK(hipFree(device_values));
+	}
 	return *this;
 }
 

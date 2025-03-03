@@ -41,6 +41,8 @@ class TensorBase {
 	virtual void write_storage(const size_t &offset, const size_t &n, const T &value) = 0;
 	virtual void write_storage(const size_t &offset, const size_t &n, const T *const &values, const CPU &src) = 0;
 	virtual void write_storage(const size_t &offset, const size_t &n, const T *const &values, const GPU &src) = 0;
+	virtual This &fill(const T &value) = 0;
+    virtual This &fill(const T* const &values) = 0;
 
   public:
 	const size_t &numel() const;
@@ -88,8 +90,6 @@ class TensorBase {
 	}
 	Derived clone() const; // deep copy
 	virtual This &contiguous() = 0;
-	virtual This &fill(const T &value) = 0;
-    virtual This &fill(const T *&values) = 0;
     virtual Tensor<T, CPU> to(const CPU& device) const = 0;
     virtual Tensor<T, GPU> to(const GPU& device) const = 0;
 	This &reshape(const vector<size_t> &new_shape);
@@ -118,13 +118,13 @@ class Tensor<T, CPU> : public TensorBase<Tensor<T, CPU>, T, CPU> {
 	void write_storage(const size_t &offset, const size_t &n, const T &value) override;
 	void write_storage(const size_t &offset, const size_t &n, const T *const &values, const CPU &src) override;
 	void write_storage(const size_t &offset, const size_t &n, const T *const &values, const GPU &src) override;
+	This &fill(const T &value) override;
+	This &fill(const T* const &values) override;
 
   public:
 	Tensor(const vector<size_t> &shape, const CPU &device = CPU()) : Base(shape, device) {
 	}
 	This &contiguous() override;
-	This &fill(const T &value) override;
-	This &fill(const T *&values) override;
     Tensor<T, CPU> to(const CPU& device) const override;
     Tensor<T, GPU> to(const GPU& device) const override;
 	string repr() const;
@@ -143,13 +143,13 @@ class Tensor<T, GPU> : public TensorBase<Tensor<T, GPU>, T, GPU> {
 	void write_storage(const size_t &offset, const size_t &n, const T &value) override;
 	void write_storage(const size_t &offset, const size_t &n, const T *const &values, const CPU &src) override;
 	void write_storage(const size_t &offset, const size_t &n, const T *const &values, const GPU &src) override;
+	This &fill(const T &value) override;
+	This &fill(const T* const &values) override;
 
   public:
 	Tensor(const vector<size_t> &shape, const GPU &device = GPU()) : Base(shape, device) {
 	}
 	This &contiguous() override;
-	This &fill(const T &value) override;
-	This &fill(const T *&values) override;
     Tensor<T, CPU> to(const CPU& device) const override;
     Tensor<T, GPU> to(const GPU& device) const override;
 };
