@@ -53,11 +53,14 @@
                   # rocm
                   rocmPackages.clr
                   rocmPackages.rocm-smi
+                  rocmPackages.rocrand
+                  rocmPackages.rocgdb
                 ];
 
-                # Environment variables required for ROCm
-                postShellHook = ''
-                  export ROCM_PATH=${pkgs.rocmPackages.clr}
+                # Environment variables required for ROCm (PYTHONWARNINGS ignored because some appears with seemingly no impact during builds with hipcc)
+                shellHook = ''
+                  export ROCM_PATH=${pkgs.rocmPackages.clr};
+                  export PYTHONWARNINGS="ignore";
                 '';
               };
         }

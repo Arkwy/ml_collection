@@ -15,20 +15,21 @@ PSO := $(wildcard $(SRC_DIR)/pso/*.cpp)
 OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 # Compiler flags
-CXXFLAGS = -std=c++2b -O2 -Wall
-LDFLAGS =
+CXXFLAGS = -std=c++2b -O2 -Wall # -DFORCE_NO_HIP_MANAGED_MEMORY
+LDFLAGS = -lrocrand 
 
 LOG_LEVEL := LOG_LEVEL_DEBUG
 
 # Create necessary directories
 $(shell mkdir -p $(OBJ_DIR) $(BIN_DIR) $(OBJ_DIR)/utils $(OBJ_DIR)/tensor $(OBJ_DIR)/pso)
 
-# Default target
+# Run (and build if needed) (default)
+run: build
+	./$(BIN_DIR)/main
+
+# Build
 build: $(TARGET)
 
-# Build and run
-brun: build
-	./$(BIN_DIR)/main
 
 # Build executable
 $(TARGET): $(OBJS)

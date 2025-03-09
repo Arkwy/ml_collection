@@ -1,32 +1,26 @@
-#include <cstddef>
 #include <hip/hip_runtime.h>
+
+#include <cstdio>
 #include <iostream>
 
-#include "tensor/device.hpp"
-#include "tensor/tensor.hpp"
-
-using namespace std;
+#include "pso/pso.hpp"
+#include "pso/space.hpp"
 
 
 int main() {
-    Tensor<int, GPU> t1 = Tensor<int, GPU>::arange(12000);
+	const size_t D = 32;
+	const size_t N = 1024;
 
+    BoxSpace<D> space({{{-10, 10}, {-10, 10}, {-100, 100}}});
 
-    t1.reshape({2, 2, 3000});
-    // cout<< endl << t1.repr() << endl;
+	PSO<N, D, BoxSpace<D>> pso(space, Topology::STAR, 0.5, 0.5, 0.5);
 
-    t1.permute({2, 1, 0});
-    // cout<< endl << t1.repr() << endl;
+	std::cout << pso.particles << std::endl;
 
-    t1.reshape({2,2,3000});
-    // cout<< endl << t1.repr() << endl;
-    Tensor<int, CPU> t1c = t1.to(CPU());
-    // cout<< endl << t1c.repr() << endl;
+	// NDArray<float, D, 2> boundaries(std::array<float, D*2>({-10., 10., -100., 100.}));
+	// Particles<N, D> particles(boundaries);
+	// particles.sync();
+	// std::cout << particles << std::endl;
 
-    Tensor<int, GPU> t2 = t1.clone();
-    // cout<< endl << t2.repr() << endl;
-    Tensor<int, CPU> t2c = t2.to(CPU());
-    // cout<< endl << t2c.repr() << endl;
-
-    return 0;
+	return 0;
 }

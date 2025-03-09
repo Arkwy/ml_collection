@@ -1,12 +1,175 @@
 #ifndef SPACE_H
 #define SPACE_H
 
-#include <array>
-#include <vector>
-class Space {
-  public:
+#include <hip/amd_detail/amd_hip_runtime.h>
+#include <hip/amd_detail/amd_warp_functions.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <numbers>
+#include <rocrand/rocrand.hpp>
+#include <utility>
 
+#include "../utils/logger.hpp"
+#include "../array/nd_array.hpp"
+
+__device__ inline float clamp(float x, float min_val, float max_val) { return fmaxf(min_val, fminf(x, max_val)); }
+
+template <size_t N, size_t D>
+__global__ void scale_in_bounds(float* const points, const float* const bounds) {
+	int x_idx = blockDim.x * blockIdx.x + threadIdx.x;
+	int y_idx = blockDim.y * blockIdx.y + threadIdx.y;
+
+	if (x_idx < D && y_idx < N) {
+		int idx = y_idx * D + x_idx;
+		points[idx] *= bounds[2 * x_idx + 1] - bounds[2 * x_idx];
+		points[idx] += bounds[2 * x_idx];
+	}
 }
+
+
+template <size_t N, size_t D>
+__global__ void clamp(float* const points, const float* const bounds) {
+	int x_idx = blockDim.x * blockIdx.x + threadIdx.x;
+	int y_idx = blockDim.y * blockIdx.y + threadIdx.y;
+
+	if (x_idx < D && y_idx < N) {
+		int idx = y_idx * D + x_idx;
+		points[idx] = clamp(
+			points[idx],
+			bounds[2 * x_idx],
+			bounds[2 * x_idx + 1]
+		);
+	}
+}
+
+template <size_t D>
+struct Space {
+	// no runtime polymorphism needed + cannot make virtual template function
+	template <size_t N>
+	void sample(const NDArray<float, N, D>& points) const;
+	template <size_t N>
+	void bound(const NDArray<float, N, D>& points) const;
+
+  protected:
+	Space() = default;
+	std::pair<dim3, dim3> kernel_dims_pointwise_ops(const size_t& points, const size_t& device_id) const {
+		dim3 grid_dim;
+		dim3 block_dim;
+
+		hipDeviceProp_t props;
+		HIP_CHECK(hipGetDeviceProperties(&props, device_id));
+
+		uint32_t warp_size = props.warpSize;
+		uint32_t max_threads_per_block = props.maxThreadsPerBlock;
+
+		uint32_t x_warps = (D + warp_size - 1) / warp_size;
+		uint32_t x_threads = x_warps * warp_size;
+
+		// row major arrays, grouping along last = D dim for better coalescence
+		// 1st case: can have mutiple points in one block as D is small enough to fit multiple times in a block
+		// 2nd case: each block process at most a single point + partially the following/previous one
+		if (x_threads <= (max_threads_per_block / 2)) {
+			uint32_t y_threads_per_block;
+			if (x_warps == 1) {
+				while (x_threads >> 1 >= D) {
+					x_threads >>= 1;
+				}
+			}
+
+            y_threads_per_block = std::min((uint32_t) points, max_threads_per_block / x_threads);
+
+			block_dim.x = x_threads;
+			block_dim.y = y_threads_per_block;
+			grid_dim.y = (points + y_threads_per_block - 1) / y_threads_per_block;
+
+		} else {
+			block_dim.x = std::min(x_threads, max_threads_per_block);
+			grid_dim.x = (x_threads + max_threads_per_block - 1) / max_threads_per_block;
+			grid_dim.y = points;
+		}
+
+
+		return std::pair<dim3, dim3>(grid_dim, block_dim);
+	}
+};
+
+
+template <size_t D>
+struct BoxSpace : public Space<D> {
+	const NDArray<float, D, 2> bounds;
+
+	BoxSpace(const std::array<std::array<float, 2>, D>& bounds) : bounds() {
+		for (size_t i = 0; i < D; i++) {
+			this->bounds[i][0] = bounds[i][0];
+			this->bounds[i][1] = bounds[i][1];
+		}
+	}
+
+	template <size_t N>
+	void sample(const NDArray<float, N, D>& points) const {
+		HIP_CHECK(hipSetDevice(points.device_id()));
+
+		rocrand_cpp::default_random_engine engine;
+		rocrand_cpp::uniform_real_distribution distribution;
+
+		distribution(engine, points.get_mut_device(), N * D * sizeof(float));
+
+		auto [grid_dim, block_dim] = this->kernel_dims_pointwise_ops(N, points.device_id());
+
+		LOG(LOG_LEVEL_INFO,
+			"\nSampling %d points in a %dD space:\ngrid dim: (%d, %d, %d)\nblock dim: (%d, %d, %d)\n",
+			N,
+            D,
+			grid_dim.x,
+			grid_dim.y,
+			grid_dim.z,
+			block_dim.x,
+			block_dim.y,
+			block_dim.z);
+
+        scale_in_bounds<N, D><<<grid_dim, block_dim>>>(points.get_mut_device(), bounds.get_device());
+	}
+
+	template <size_t N>
+	void bound(const NDArray<float, N, D>& points) const {
+		HIP_CHECK(hipSetDevice(points.device_array->device_id()))
+
+		auto [grid_dim, block_dim] = this->kernel_dims_pointwise_ops(N);
+
+		clamp<N, D><<<grid_dim, block_dim>>>(points.get_mut_device(), bounds.get_device());
+	}
+};
+
+template <size_t D>
+struct SphereSpace : public Space<D> {
+	const float radius;
+
+	SphereSpace(const float& radius) : radius(radius), bounds() {
+		// radial coordinate
+		bounds[0][0] = 0;
+		bounds[0][1] = radius;
+		// angular coordinates
+		bounds[1][0] = -std::numbers::pi;
+		bounds[1][1] = std::numbers::pi;
+		for (size_t i = 2; i < D; i++) {
+			bounds[i][0] = 0;
+			bounds[i][1] = std::numbers::pi;
+		}
+	}
+
+	template <size_t N>
+	void sample(const NDArray<float, N, D>& points) const {
+		rocrand_cpp::default_random_engine engine;
+		rocrand_cpp::uniform_real_distribution distribution;
+
+		distribution(engine, points.get_mut_device(), N * D * sizeof(float));
+
+		scale_in_bounds<N, D><<<dim3(N * D, 2), 1>>>(points.get_mut_device(), bounds.get_device());
+	}
+
+  private:
+	const NDArrayBase<float, D, 2> bounds;
+};
 
 #endif
