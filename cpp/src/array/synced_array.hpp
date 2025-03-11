@@ -1,8 +1,8 @@
 #ifndef SYNCED_ARRAY_H
 #define SYNCED_ARRAY_H
 
-#include <hip/amd_detail/amd_hip_runtime.h>
-#include <hip/driver_types.h>
+// #include <hip/amd_detail/amd_hip_runtime.h>
+// #include <hip/driver_types.h>
 #include <hip/hip_runtime.h>
 #include <sys/types.h>
 
@@ -72,15 +72,18 @@ struct SyncedArray {
 	const size_t device_id = 0;
 
 	SyncedArray(const size_t& size, const size_t& device_id = 0)
-		: size(size),
-		  device_id(device_id),
-		  device_data(alloc_device(device_id)),
-		  host_data(alloc_host()) {}
+		: size(size), device_id(device_id), device_data(alloc_device(device_id)), host_data(alloc_host()) {}
 
 
-	~SyncedArray() {
-		HIP_CHECK(hipFree(device_data));
-        delete[] host_data;
+	~SyncedArray() noexcept {
+		delete[] host_data;
+		hipError_t status = hipFree(device_data);
+
+		if (status != hipSuccess) {
+			LOG(LOG_LEVEL_ERROR,
+				"Error: HIP reports %s during the destruction of SyncedArray (double free ?).",
+				hipGetErrorString(status));
+		}
 	}
 
 	SyncedArray(SyncedArray& other) = delete;
@@ -123,13 +126,13 @@ struct SyncedArray {
 	T* alloc_device(const size_t& device_id = 0) const {
 		T* data;
 		HIP_CHECK(hipSetDevice(device_id));
-        HIP_CHECK(hipMalloc(&data, size * sizeof(T)));
+		HIP_CHECK(hipMalloc(&data, size * sizeof(T)));
 		return data;
 	}
 
 	T* alloc_host() const {
-        T* data = new T[size];
-        return data;
+		T* data = new T[size];
+		return data;
 	}
 
 	void sync_with_device() const {

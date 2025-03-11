@@ -15,7 +15,7 @@ class HIPTimer {
 
   public:
     HIPTimer();
-    ~HIPTimer();
+    ~HIPTimer() noexcept;
     void reset();
     void start();
     void stop();

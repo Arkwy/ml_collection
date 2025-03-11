@@ -6,12 +6,12 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <numbers>
 #include <rocrand/rocrand.hpp>
 #include <utility>
 
 #include "../utils/logger.hpp"
 #include "../array/nd_array.hpp"
+
 
 __device__ inline float clamp(float x, float min_val, float max_val) { return fmaxf(min_val, fminf(x, max_val)); }
 
@@ -45,11 +45,15 @@ __global__ void clamp(float* const points, const float* const bounds) {
 
 template <size_t D>
 struct Space {
+    static constexpr size_t dim = D;
+
 	// no runtime polymorphism needed + cannot make virtual template function
 	template <size_t N>
 	void sample(const NDArray<float, N, D>& points) const;
 	template <size_t N>
 	void bound(const NDArray<float, N, D>& points) const;
+
+
 
   protected:
 	Space() = default;
@@ -139,37 +143,6 @@ struct BoxSpace : public Space<D> {
 
 		clamp<N, D><<<grid_dim, block_dim>>>(points.get_mut_device(), bounds.get_device());
 	}
-};
-
-template <size_t D>
-struct SphereSpace : public Space<D> {
-	const float radius;
-
-	SphereSpace(const float& radius) : radius(radius), bounds() {
-		// radial coordinate
-		bounds[0][0] = 0;
-		bounds[0][1] = radius;
-		// angular coordinates
-		bounds[1][0] = -std::numbers::pi;
-		bounds[1][1] = std::numbers::pi;
-		for (size_t i = 2; i < D; i++) {
-			bounds[i][0] = 0;
-			bounds[i][1] = std::numbers::pi;
-		}
-	}
-
-	template <size_t N>
-	void sample(const NDArray<float, N, D>& points) const {
-		rocrand_cpp::default_random_engine engine;
-		rocrand_cpp::uniform_real_distribution distribution;
-
-		distribution(engine, points.get_mut_device(), N * D * sizeof(float));
-
-		scale_in_bounds<N, D><<<dim3(N * D, 2), 1>>>(points.get_mut_device(), bounds.get_device());
-	}
-
-  private:
-	const NDArrayBase<float, D, 2> bounds;
 };
 
 #endif

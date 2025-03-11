@@ -66,7 +66,10 @@ void HIPTimer::status() {
     std::cout << "  Total CPU time: " << cpu_total << " ms" << std::endl;
 }
 
-HIPTimer::~HIPTimer() {
-    HIP_CHECK(hipEventDestroy(hip_start));
-    HIP_CHECK(hipEventDestroy(hip_stop));
+HIPTimer::~HIPTimer() noexcept {
+    hipError_t status_start = hipEventDestroy(hip_start);
+    hipError_t status_stop = hipEventDestroy(hip_stop);
+	if (status_start != hipSuccess || status_stop != hipSuccess) {
+        LOG(LOG_LEVEL_ERROR, "HIP faild destroying timer event.")
+	}
 }

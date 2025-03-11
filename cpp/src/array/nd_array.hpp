@@ -66,15 +66,18 @@ struct NDArray : public NDArrayBase<T, N, M...> {
 
 	NDArray<T, M...> operator[](const size_t& index) const { return this->get_index(index); }
 
-	NDArray<T, M...> operator=(const T& value) const { std::fill(this->get_mut_data(), this->get_mut_data() + this->size, value); }
+	void operator=(const T& value) const {
+        T* data_ptr = this->get_mut_host();
+		std::fill(data_ptr, data_ptr + this->size, value);
+    }
 
 	std::string repr(const size_t& offset = 0) const {
 		std::ostringstream oss;
-		oss << "[" << this->get_index(0).repr(offset + 1) << std::endl;
-		for (size_t i = 1; i < N - 1; i++) {
-			oss << std::setw(offset + 1) << " " << this->get_index(i).repr(offset + 1) << std::endl;
+		oss << "[" << this->get_index(0).repr(offset + 1);
+		for (size_t i = 1; i < N; i++) {
+			oss << std::endl << std::setw(offset + 1) << " " << this->get_index(i).repr(offset + 1);
 		}
-		oss << std::setw(offset + 1) << " " << this->get_index(N - 1).repr(offset + 1) << "]";
+        oss << "]";
 		return oss.str();
 	}
 };
@@ -110,10 +113,11 @@ struct NDArray<T, N> : public NDArrayBase<T, N> {
 		const T* const arr = this->get_host();
 		std::ostringstream oss;
 		oss << "[";
-		for (size_t i = 0; i < N - 1; i++) {
-			oss << std::setw(9) << std::scientific << std::setprecision(2) << arr[i] << ", ";
+		for (size_t i = 0; i < N; i++) {
+			oss << std::setw(9) << std::scientific << std::setprecision(2) << arr[i];
+            if (i != N-1) oss << ", "; 
 		}
-		oss << std::setw(9) << std::scientific << std::setprecision(2) << arr[N - 1] << "]";
+        oss << "]";
 		return oss.str();
 	}
 };
