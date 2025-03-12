@@ -15,7 +15,7 @@ PSO := $(wildcard $(SRC_DIR)/pso/*.cpp)
 OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 # Compiler flags
-CXXFLAGS = -std=c++2b -O2 -Wall # -DFORCE_NO_HIP_MANAGED_MEMORY
+CXXFLAGS = -std=c++2b -O2 -Wall
 LDFLAGS = -lrocrand 
 
 LOG_LEVEL := LOG_LEVEL_DEBUG
@@ -29,7 +29,6 @@ run: build
 
 # Build
 build: $(TARGET)
-
 
 # Build executable
 $(TARGET): $(OBJS)
