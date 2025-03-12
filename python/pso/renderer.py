@@ -10,7 +10,7 @@ from pso import PSO, PSOConfig, Topology
 
 class Renderer:
 
-    class Box:
+    class RenderBox:
         def __init__(self, x: int, y: int, width: int, height: int) -> None:
             self.x = x
             self.y = y
@@ -98,8 +98,8 @@ class Renderer:
         
         # Create the base image for BoxSpace
         
-        self.space_box = Renderer.Box(x_margin, y_margin, box_size, box_size)
-        self.gradient_box = Renderer.Box(x_margin + box_size + min_margin, y_margin, gradient_bar_width, box_size)
+        self.space_box = Renderer.RenderBox(x_margin, y_margin, box_size, box_size)
+        self.gradient_box = Renderer.RenderBox(x_margin + box_size + min_margin, y_margin, gradient_bar_width, box_size)
 
         self.draw_gradient_bar(*self.draw_space(5), 5)
 
@@ -170,7 +170,7 @@ class Renderer:
 
     def save_positions(self) -> None:
         self.history_buffer[:, 1:] = self.history_buffer[:, :-1]
-        self.history_buffer[:, 0] = self.pso.positions.clone()
+        self.history_buffer[:, 0] = self.pso.position.clone()
 
 
     def step(self) -> None:
@@ -180,10 +180,10 @@ class Renderer:
 
 
     def to_draw_space(self, positions: Tensor) -> Tensor:
-        # Normailze in 0-1
+        # Normalize in [0; 1]
         positions = (positions - self.space.mins) / self.space.dimensions
 
-        # To box space
+        # To render box space
         positions = ((positions * self.space_box.size) + self.space_box.offset).type(torch.int)
         positions[..., 1] = self.height - positions[..., 1]
 
@@ -214,14 +214,14 @@ if __name__ == "__main__":
         1000,
         True,
         PSOConfig(
-            50,
-            Topology.GLOBAL,
-            0.5,
-            0.2,
-            0.2,
+            5,
+            Topology.STAR,
+            .5,
+            .2,
+            .6,
             BoxSpace(
-                torch.tensor([-10, -10]),
-                torch.tensor([10, 10]),
+                torch.tensor([-20, -10]),
+                torch.tensor([20, 10]),
                 lambda x: ((x.abs() - 2) ** 2).sum(-1) ** 0.5 + (x * 10).sin().sum(-1) / 5,
             ),
         )

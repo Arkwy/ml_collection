@@ -25,7 +25,6 @@
         );
     in
     {
-      allowBroken = true;
       devShells = forEachSupportedSystem (
         { pkgs }:
         {
