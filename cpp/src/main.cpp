@@ -1,81 +1,54 @@
-#include <hip/amd_detail/amd_hip_runtime.h>
-#include <hip/hip_runtime.h>
+// #include <hip/amd_detail/amd_hip_runtime.h>
+// #include <hip/hip_runtime.h>
 
-#include <cstdio>
-#include <iostream>
-#include <ranges>
-#include <type_traits>
+// #include <cstdio>
+// #include <iostream>
 
-#include "pso/pso.hpp"
-#include "pso/space.hpp"
-#include "pso/eval_function.hpp"
+// #include "pso/eval_function.hpp"
+// #include "pso/pso.hpp"
+// #include "pso/space.hpp"
 
-// static constexpr PointEvaluationMode ST = PointEvaluationMode::SingleThreaded;
+// using MyEvalFunction = EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>>;
 
-// struct F {
-//     using PEM = PointEvaluationMode::SingleThreaded;
-// 	__device__ static float eval_point(const float* const point) { return point[0] + 2 * point[1] - point[2]; }
-// };
+// template <>
+// __device__ float MyEvalFunction::eval_point(const float* const point) {
+//     return 1.23;
+// }
 
-// struct MySpace : public BoxSpace<3, PointEvaluationMode::SingleThreaded> {
-// 	MySpace(const std::array<std::array<float, 2>, 3>& bounds) : BoxSpace<3, PointEvaluationMode::SingleThreaded>(bounds) {}
-// 	__device__ static float eval_point(const float* const point) {
-//         return 1;
-// 	}
-// };
+// int main() {
+// 	const size_t N = 1025;
 
+// 	MyEvalFunction ef(BoxSpace<3>({{{-1, 1}, {-1, 1}, {-1, 1}}}));
 
-// struct MyEvalFunction : EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>> {
-// 	__global__ static void eval_points(const float* const points, float* const result, int N) {
-//         int point_idx = threadIdx.x + blockDim.x * blockIdx.x;
-//         if (point_idx < N) {
-//             result[point_idx] = eval_point(points + point_idx * Sc::dim);
-//         }
-//     }
+//     PSO<N, MyEvalFunction, Topology::STAR> pso(ef, 0.5, 0.4, 0.6);
 
-// 	__device__ static float eval_point(const float* const point) {
-//         return 1;
-// 	}
-// };
+//     std::cout << pso.fitness << std::endl;
+//     std::cout << pso.particle_best_fitness << std::endl;
 
-using MyEvalFunction = EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>>;
+// 	return 0;
+// }
 
-template <>
-__device__ float MyEvalFunction::eval_point(const float* const point) {
-    return 1;
-}
+#include "ops/reduce/1d.hpp"
 
 int main() {
-	const size_t N = 10;
+	constexpr uint N = 2000;
 
-    MyEvalFunction ef(BoxSpace<3>({{{-1, 1}, {-1, 1}, {-1, 1}}}));
-	Particles<N, 3> particles;
-	ef.space.sample(particles.positions);
-	ef.space.sample(particles.velocities);
-    std::cout << ef.space.bounds << std::endl;
-	std::cout << particles << std::endl;
+	NDArray<double, N> data;
+	for (int i = 0; i < N; i++) {
+		data[i] = (double) -i;
+	}
 
-    NDArray<float, N> fitness;
-    ef.eval_points<<<N, 1>>>(particles.positions.get_device(), fitness.get_mut_device(), N);
+	int max = reduce_1d<Max<double>, N>(data);
+	std::cout << max << std::endl;
 
-	std::cout << fitness << std::endl;
-	std::cout << particles << std::endl;
+	int min = reduce_1d<Min<double>, N>(data);
+	std::cout << min << std::endl;
 
-    // using MySpace = BoxSpace<3, PointEvaluationMode::SingleThreaded>;
+	int arg_max = reduce_1d<ArgMax<double>, N>(data);
+	std::cout << arg_max << std::endl;
 
-	// MySpace space({{{-10, 10}, {-10, 10}, {-10, 10}}});
-
-
-	// PSO<N, MySpace, Topology::STAR> pso(space, 0.5, 0.5, 0.5);
-
-    // MySpace::eval_points<<<10, 1>>>(pso.particles.positions.get_device(), pso.fitness.get_mut_device(), 10);
-	// // std::cout << pso.particles << std::endl;
-
-	// // NDArray<float, D, 2> boundaries(std::array<float, D*2>({-10., 10., -100., 100.}));
-	// // Particles<N, D> particles(boundaries);
-	// // particles.sync();
-	// std::cout << pso.particles << std::endl;
-	// std::cout << pso.fitness << std::endl;
+	int arg_min = reduce_1d<ArgMin<double>, N>(data);
+	std::cout << arg_min << std::endl;
 
 	return 0;
 }

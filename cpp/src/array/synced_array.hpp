@@ -75,10 +75,9 @@ struct SyncedArray {
 		: size(size), device_id(device_id), device_data(alloc_device(device_id)), host_data(alloc_host()) {}
 
 
-	~SyncedArray() noexcept {
+	~SyncedArray()  {
 		delete[] host_data;
 		hipError_t status = hipFree(device_data);
-
 		if (status != hipSuccess) {
 			LOG(LOG_LEVEL_ERROR,
 				"Error: HIP reports %s during the destruction of SyncedArray (double free ?).",
