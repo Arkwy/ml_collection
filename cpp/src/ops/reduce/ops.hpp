@@ -1,9 +1,6 @@
 #ifndef OPS_REDUCE_OPS_H
 #define OPS_REDUCE_OPS_H
 
-#include <hip/amd_detail/amd_hip_runtime.h>
-#include <hip/amd_detail/amd_hip_vector_types.h>
-#include <hip/driver_types.h>
 #include <hip/hip_runtime.h>
 
 #include <type_traits>
