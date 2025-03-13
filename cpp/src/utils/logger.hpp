@@ -16,18 +16,18 @@
 #endif
 
 // Logging macro
-#define LOG(level, message, ...)                        \
-	if constexpr (level >= LOG_LEVEL) {                 \
+#define LOG(level, message, ...)                    \
+    if constexpr (level >= LOG_LEVEL) {             \
         Logger::log(level, message, ##__VA_ARGS__); \
-	}
+    }
 
 // Logger class declaration
 class Logger {
   public:
-	static void log(int level, const char* format, ...);
+    static void log(int level, const char* format, ...);
 
   private:
-	static const char* levelToString(int level);
+    static const char* levelToString(int level);
 };
 
-#endif	// LOGGER_H
+#endif  // LOGGER_H

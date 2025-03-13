@@ -1,9 +1,10 @@
 #ifndef HIP_TIMER_H
 #define HIP_TIMER_H
 
-#include <chrono>
 #include <hip/amd_detail/amd_hip_runtime.h>
 #include <hip/hip_runtime.h>
+
+#include <chrono>
 
 class HIPTimer {
   private:

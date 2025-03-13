@@ -1,7 +1,7 @@
-#include <hip/amd_detail/amd_hip_runtime.h>
-#include <string>
-
 #include "hip_timer.hpp"
+
+#include <hip/amd_detail/amd_hip_runtime.h>
+
 #include "hip_utils.hpp"
 #include "logger.hpp"
 
@@ -35,9 +35,9 @@ void HIPTimer::stop() {
         return;
     }
     HIP_CHECK(hipEventRecord(hip_stop, NULL));
-    HIP_CHECK(hipEventSynchronize(hip_stop)); // Wait for completion
-    
-    HIP_CHECK(hipDeviceSynchronize()); // Ensure kernel is finished before stopping the
+    HIP_CHECK(hipEventSynchronize(hip_stop));  // Wait for completion
+
+    HIP_CHECK(hipDeviceSynchronize());  // Ensure kernel is finished before stopping the
     // timer TODO: check redundancy with last line
     cpu_stop = std::chrono::high_resolution_clock::now();
 
@@ -53,7 +53,6 @@ void HIPTimer::stop() {
 }
 
 void HIPTimer::status() {
-
     std::cout << "Timer status";
     if (running) {
         std::cout << " (running, status from last finished lap)";
@@ -69,7 +68,7 @@ void HIPTimer::status() {
 HIPTimer::~HIPTimer() noexcept {
     hipError_t status_start = hipEventDestroy(hip_start);
     hipError_t status_stop = hipEventDestroy(hip_stop);
-	if (status_start != hipSuccess || status_stop != hipSuccess) {
+    if (status_start != hipSuccess || status_stop != hipSuccess) {
         LOG(LOG_LEVEL_ERROR, "HIP faild destroying timer event.")
-	}
+    }
 }
