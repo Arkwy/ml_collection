@@ -9,3 +9,4 @@ cpp/bin/
 cpp/compile_commands.json
 cpp/test/
 vgcore*
+.gdb_history
