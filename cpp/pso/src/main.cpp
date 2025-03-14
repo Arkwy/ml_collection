@@ -1,6 +1,3 @@
-#include <hip/hip_runtime.h>
-
-#include <cstdio>
 #include <iostream>
 
 #include "pso/eval_function.hpp"
@@ -11,7 +8,7 @@ using MyEvalFunction = EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpac
 
 template <>
 __device__ float MyEvalFunction::eval_point(const float* const point) {
-    return point[0] + 2.f *  point[1] - point[2];
+    return point[0] + 2.f * point[1] - point[2];
 }
 
 int main() {
@@ -19,7 +16,7 @@ int main() {
 
 	MyEvalFunction ef(BoxSpace<3>({{{-1, 1}, {-1, 1}, {-1, 1}}}));
 
-    PSO<N, MyEvalFunction, Topology::STAR> pso(ef, 0.5, 0.4, 0.6);
+    PSO<N, MyEvalFunction, Topology::GLOBAL> pso(ef, 0.5, 0.4, 0.6);
 
     std::cout << pso.particles << std::endl;
     std::cout << pso.fitness << std::endl;

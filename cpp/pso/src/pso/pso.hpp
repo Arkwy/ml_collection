@@ -11,12 +11,12 @@
 
 
 enum Topology {
-	STAR,
+	GLOBAL,
 };
 
 inline const char* topology_to_string(int topology) {
 	switch (topology) {
-		case STAR:
+		case GLOBAL:
 			return "STAR";
 			break;
 		default:
@@ -77,7 +77,7 @@ struct PSO {
 
   private:
 	void init_connections() {
-		if constexpr (Topology_ == Topology::STAR) {
+		if constexpr (Topology_ == Topology::GLOBAL) {
 			neighborhood.fill(0xffffffff);
 		} else {
 			static_assert(false, "Unexpected Topology!");
