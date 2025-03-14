@@ -29,7 +29,7 @@ r = Renderer(
 
 cv2.namedWindow("main", cv2.WINDOW_NORMAL)
 k = -1
-while k not in [27, ord('q')]:
+while k not in [27, ord('q')] and cv2.getWindowProperty('main', 1) >= 0:
     r.step()
     cv2.imshow("main", r.step_image)
     k = cv2.waitKey(100)
