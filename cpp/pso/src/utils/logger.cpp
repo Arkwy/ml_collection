@@ -1,8 +1,8 @@
 #include "logger.hpp"
 
-#include <cstdio>  // For vprintf
+#include <iostream>
+#include <cstdio>
 
-// Log level to string mapping
 const char* Logger::levelToString(int level) {
     switch (level) {
         case LOG_LEVEL_DEBUG:
@@ -18,11 +18,9 @@ const char* Logger::levelToString(int level) {
     }
 }
 
-// Log function implementation
 void Logger::log(int level, const char* format, ...) {
     const char* levelStr = levelToString(level);
 
-    // Print log level
     std::cout << "[" << levelStr << "] ";
 
     // Handle variadic arguments

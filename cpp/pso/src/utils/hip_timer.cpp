@@ -2,6 +2,8 @@
 
 #include <hip/amd_detail/amd_hip_runtime.h>
 
+#include <iostream>
+
 #include "hip_utils.hpp"
 #include "logger.hpp"
 

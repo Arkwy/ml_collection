@@ -81,10 +81,10 @@ class Renderer:
         # Define margin space (5% of width or height, whichever is smaller)
         min_margin = int(0.05 * min(self.width, self.height))
         
-        # Define gradient bar width (5% of width for the z-axis and its labels)
+        # Define gradient bar width
         gradient_bar_width = 2 * min_margin
         
-        # Calculate available space for the BoxSpace (it must be a square)
+        # Calculate available space for the BoxSpace
         available_width = self.width - gradient_bar_width - 3 * min_margin # side margins + between space and gradient bar margin
         available_height = self.height - 2 * min_margin
 
@@ -164,7 +164,16 @@ class Renderer:
             value = (ticks - i - 1) / (ticks - 1) * (max_val - min_val) + min_val  # Normalize the value between 0 and 1
             text = f"{value:.2f}"
             x_line = self.gradient_box.x + self.gradient_box.width 
-            cv2.putText(self.image, text, (x_line + 7, tick + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.text_color, 1, cv2.LINE_AA)
+            cv2.putText(
+                self.image,
+                text,
+                (x_line + 7, tick + 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                self.text_color,
+                1,
+                cv2.LINE_AA,
+            )
             cv2.line(self.image, (x_line - 5, tick), (x_line + 5, tick), self.text_color, 2)
 
 
@@ -196,9 +205,21 @@ class Renderer:
         positions = self.to_draw_space(positions).tolist()
 
         for particle_positions in positions:
-            cv2.circle(self.step_image, particle_positions[0], (self.history_length * 2) // 3, self.text_color, thickness=-1)
+            cv2.circle(
+                self.step_image,
+                particle_positions[0],
+                (self.history_length * 2) // 3,
+                self.text_color,
+                thickness=-1,
+            )
             for i in range(len(particle_positions) - 1):
-                cv2.line(self.step_image, particle_positions[i], particle_positions[i+1], self.text_color, max(1, (self.history_length - i - 1) // 2))
+                cv2.line(
+                    self.step_image,
+                    particle_positions[i],
+                    particle_positions[i+1],
+                    self.text_color,
+                    max(1, (self.history_length - i - 1) // 2),
+                )
 
         if self.draw_com:
             for i in range(self.pso.particles):
@@ -208,31 +229,3 @@ class Renderer:
         
 
 
-if __name__ == "__main__":
-    r = Renderer(
-        1600,
-        1000,
-        True,
-        PSOConfig(
-            5,
-            Topology.STAR,
-            .5,
-            .2,
-            .6,
-            BoxSpace(
-                torch.tensor([-20, -10]),
-                torch.tensor([20, 10]),
-                lambda x: ((x.abs() - 2) ** 2).sum(-1) ** 0.5 + (x * 10).sin().sum(-1) / 5,
-            ),
-        )
-    )
-
-    cv2.namedWindow("main", cv2.WINDOW_NORMAL)
-    k = -1
-    while k not in [27, ord('q')]:
-        r.step()
-        cv2.imshow("main", r.step_image)
-        k = cv2.waitKey(100)
-
-    cv2.destroyAllWindows()
-    
