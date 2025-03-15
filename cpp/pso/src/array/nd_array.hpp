@@ -15,7 +15,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "synced_array.hpp"
+#include "dual_array.hpp"
 #include "utils.hpp"
 
 template <typename T, size_t N, size_t... M>
@@ -24,15 +24,15 @@ struct NDArrayBase {
     constexpr static const size_t dim = 1 + sizeof...(M);
     constexpr static const size_t size = mul<N, M...>::value;
 
-    const T* const get_device() const { return synced_array->get_device(offset, size); }
+    const T* const get_device() const { return array->get_device(offset, size); }
 
-    T* const get_mut_device() const { return synced_array->get_mut_device(offset, size); }
+    T* const get_mut_device() const { return array->get_mut_device(offset, size); }
 
-    const T* const get_host() const { return synced_array->get_host(offset, size); }
+    const T* const get_host() const { return array->get_host(offset, size); }
 
-    T* const get_mut_host() const { return synced_array->get_mut_host(offset, size); }
+    T* const get_mut_host() const { return array->get_mut_host(offset, size); }
 
-    size_t device_id() const { return synced_array->device_id; }
+    size_t device_id() const { return array->device_id; }
 
     void fill(const T& value) const {
         T* data_ptr = this->get_mut_host();
@@ -56,18 +56,18 @@ struct NDArrayBase {
     }
 
   protected:
-    const std::shared_ptr<SyncedArray<T>> synced_array;
+    const std::shared_ptr<DualArray<T>> array;
     const bool is_view = false;
     const size_t offset = 0;
 
-    NDArrayBase(const size_t& device_id = 0) : synced_array(std::make_shared<SyncedArray<T>>(size, device_id)) {}
+    NDArrayBase(const size_t& device_id = 0) : array(std::make_shared<DualArray<T>>(size, device_id)) {}
 
     NDArrayBase(const std::array<T, size>& data, const size_t& device_id = 0) : NDArrayBase(device_id) {
-        memcpy(synced_array->get_mut_host(offset, size), data.data(), size * sizeof(T));
+        memcpy(array->get_mut_host(offset, size), data.data(), size * sizeof(T));
     }
 
-    NDArrayBase(const std::shared_ptr<SyncedArray<T>>& synced_array, const size_t& offset)
-        : synced_array(synced_array), is_view(true), offset(offset) {}
+    NDArrayBase(const std::shared_ptr<DualArray<T>>& synced_array, const size_t& offset)
+        : array(synced_array), is_view(true), offset(offset) {}
 };
 
 
@@ -80,11 +80,11 @@ struct NDArray : public NDArrayBase<T, N, M...> {
 
     NDArray(const std::array<T, Base::size>& data, const size_t& device_id = 0) : Base(data, device_id) {}
 
-    NDArray(const std::shared_ptr<SyncedArray<T>>& synced_array, const size_t& offset) : Base(synced_array, offset) {}
+    NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const size_t& offset) : Base(synced_array, offset) {}
 
     NDArray<T, M...> get_index(const size_t& index) const {
         assert(index < N);
-        return NDArray<T, M...>(this->synced_array, this->offset + index * mul<M...>::value);
+        return NDArray<T, M...>(this->array, this->offset + index * mul<M...>::value);
     }
 
     NDArray<T, M...> operator[](const size_t& index) const { return this->get_index(index); }
@@ -108,7 +108,7 @@ struct NDArray<T, N> : public NDArrayBase<T, N> {
 
     NDArray(const std::array<T, Base::size>& data, const size_t& device_id = 0) : Base(data, device_id) {}
 
-    NDArray(const std::shared_ptr<SyncedArray<T>>& synced_array, const size_t& offset) : Base(synced_array, offset) {}
+    NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const size_t& offset) : Base(synced_array, offset) {}
 
     T get_index(const size_t& index) const {
         assert(index < N);

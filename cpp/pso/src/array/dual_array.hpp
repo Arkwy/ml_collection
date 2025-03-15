@@ -3,6 +3,7 @@
 
 // #include <hip/amd_detail/amd_hip_runtime.h>
 // #include <hip/driver_types.h>
+#include <hip/amd_detail/amd_hip_runtime.h>
 #include <hip/hip_runtime.h>
 #include <sys/types.h>
 
@@ -67,16 +68,26 @@ struct DesyncStatus {
 };
 
 template <typename T>
-struct SyncedArray {
+struct DualArray {
     const size_t size;
     const size_t device_id = 0;
+    const bool pinned = true;
 
-    SyncedArray(const size_t& size, const size_t& device_id = 0)
-        : size(size), device_id(device_id), device_data(alloc_device(device_id)), host_data(alloc_host()) {}
+    DualArray(const size_t& size, const size_t& device_id = 0, const bool& pinned = true)
+        : size(size), device_id(device_id), pinned(pinned), device_data(alloc_device(device_id)), host_data(alloc_host()) {}
 
 
-    ~SyncedArray() {
-        delete[] host_data;
+    ~DualArray() {
+        if (pinned) {
+            hipError_t h_status = hipHostFree(host_data);
+            if (h_status != hipSuccess) {
+                LOG(LOG_LEVEL_ERROR,
+                    "Error: HIP reports %s during the destruction of SyncedArray (double free ?).",
+                    hipGetErrorString(h_status));
+            }
+        } else {
+            delete[] host_data;
+        }
         hipError_t status = hipFree(device_data);
         if (status != hipSuccess) {
             LOG(LOG_LEVEL_ERROR,
@@ -85,7 +96,7 @@ struct SyncedArray {
         }
     }
 
-    SyncedArray(SyncedArray& other) = delete;
+    DualArray(DualArray& other) = delete;
 
     const T* const get_device(const size_t& start, const size_t& size) const {
         if (desync_status.host_side && desync_status.overlaps_section(start, start + size)) {
@@ -130,7 +141,8 @@ struct SyncedArray {
     }
 
     T* alloc_host() const {
-        T* data = new T[size];
+        T* data;
+        HIP_CHECK(hipHostMalloc(&data, size * sizeof(T)));
         return data;
     }
 
