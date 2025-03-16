@@ -25,19 +25,25 @@ inline const char* topology_to_string(int topology) {
 }
 
 // Trait to check if a class is derived from a Space<D> whatever is D
+// template <typename T>
+// class is_eval_function {
+//     template <PointEvaluationMode PEM, SpaceType S>
+//     static std::true_type check(EvalFunction<PEM, S>*);  // Matches if T inherits Space<D> for any size_t D
+
+//     static std::false_type check(...);  // Maches any T if first overload doesn't match
+
+//   public:
+//     static constexpr bool value = decltype(check(std::declval<T*>()))::value;
+// };
+
+// template <typename T>
+// concept EvalFunctionType = is_eval_function<T>::value;
+
 template <typename T>
-class is_eval_function {
-    template <PointEvaluationMode PEM, SpaceType S>
-    static std::true_type check(EvalFunction<PEM, S>*);  // Matches if T inherits Space<D> for any size_t D
-
-    static std::false_type check(...);  // Maches any T if first overload doesn't match
-
-  public:
-    static constexpr bool value = decltype(check(std::declval<T*>()))::value;
+concept EvalFunctionType = requires {
+    // This checks if `T` inherits from any specialization of `EvalFunction<PEM, S>`
+    []<PointEvaluationMode PEM, typename S, typename D>(EvalFunction<PEM, S, D>*) {}(std::declval<T*>());
 };
-
-template <typename T>
-concept EvalFunctionType = is_eval_function<T>::value;
 
 template <size_t NumParticles, EvalFunctionType EF, Topology Topology_>
 struct PSO {
