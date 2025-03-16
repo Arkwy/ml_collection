@@ -3,11 +3,6 @@
 
 #include <hip/amd_detail/amd_hip_runtime.h>
 
-#include <cstdint>
-#include <iostream>
-#include <limits>
-#include <memory>
-
 #include "../array/nd_array.hpp"
 #include "../ops/reduce/1d.hpp"
 #include "eval_function.hpp"

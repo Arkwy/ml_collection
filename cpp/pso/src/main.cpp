@@ -6,15 +6,16 @@
 #include "pso/topology.hpp"
 
 
+// The function to run PSO on can be defined by template specialization.
 using MyEvalFunction = EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>>;
 
- 
 template <>
 __device__ float MyEvalFunction::eval_point(const float* const point) {
     return 0;
 }
 
 
+// Or by inheriting `EvalFunction` and using CRTP, which allows compiling with multiple different functions to evaluate.
 struct MyDerivedEvalFunction
     : public EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>, MyDerivedEvalFunction> {
     __device__ static float eval_point(const float* const point) { return point[0] + 2.0 * point[1] - point[2]; }
