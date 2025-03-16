@@ -9,7 +9,7 @@ To run the implementations, you need to install the required dependencies. The m
 - **OpenCV** (for visualization)
 
 ### Installation
-Ensure you have Python installed (only version: **3.13** has been tested). Then, install the dependencies manually:
+Ensure you have Python installed (only version: **3.13** has been tested). Then, install the dependencies. E.g. for PSO:
 
 ```bash
 pip install torch opencv-python
@@ -28,9 +28,8 @@ To test an algorithm, modify then run the `main.py` file from the corresponding 
 python main.py
 ```
 
-This will initialize and execute the selected machine learning algorithm.
+This will initialize and execute the selected algorithm.
 
-## Available Algorithms
+## Algorithms
 ✅ **Particle Swarm Optimization (PSO)**
-
-🚧 **More algorithms coming soon!**
+   - **Dependencies**: PyTorch, OpenCV (for visualization)

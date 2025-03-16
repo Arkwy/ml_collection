@@ -5,18 +5,14 @@ This repository contains implementations of various machine learning algorithms 
 🚨 Note: This repository is intended for personal learning and experimentation. As a result, tools, libraries, and dependencies may vary across implementations.
 
 
-## Implemented Algorithms
+## Algorithms
 ### Python
 ✅ **Particle Swarm Optimization (PSO)**
    - **Dependencies**: PyTorch, OpenCV (for visualization)
 
-🚧 **More algorithms coming soon!**
-
 ### C++
 🔄 **Particle Swarm Optimization (PSO) – In Progress**
    - **Dependencies**: HIP 
-
-🚧 **More algorithms planned!**
 
 ## How to Use
 1. Clone the repository:
