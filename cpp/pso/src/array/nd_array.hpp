@@ -18,6 +18,17 @@
 #include "dual_array.hpp"
 #include "utils.hpp"
 
+/**
+ * Multi dimentionnal array template <data_type, dim_1, dim_2, ... dim_n>
+ *
+ * Uses a DualArray to hold elements in contiguous strided row major layout.
+ * The separation of this class with the data holder allows sharing same data with other NDArray (using a shared_ptr to
+ * this data holder) and avoiding memory copies when working with subset of the data.
+ *
+ * TODO: Support DeviceArray and Host array as aleternative data holders to reduce memory synchronisation overhead when
+ * not needed.
+ *
+ */
 template <typename T, size_t N, size_t... M>
 struct NDArrayBase {
     using This = NDArrayBase<T, N, M...>;

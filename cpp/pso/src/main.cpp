@@ -8,7 +8,7 @@ using MyEvalFunction = EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpac
 
 template <>
 __device__ float MyEvalFunction::eval_point(const float* const point) {
-    return point[0] + 2.f * point[1] - point[2];
+    return point[0] + 2.0 * point[1] - point[2];
 }
 
 int main() {
@@ -18,8 +18,8 @@ int main() {
 
     PSO<N, MyEvalFunction, Topology::GLOBAL> pso(ef, 0.5, 0.4, 0.6);
 
-    std::cout << pso.particles << std::endl;
-    std::cout << pso.fitness << std::endl;
+    std::cout << pso.particles.position << std::endl;
+    std::cout << pso.particles.fitness << std::endl;
 
     // pso.run(100); // TODO
 

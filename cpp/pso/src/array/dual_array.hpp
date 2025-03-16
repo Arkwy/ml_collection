@@ -82,7 +82,7 @@ struct DualArray {
             hipError_t h_status = hipHostFree(host_data);
             if (h_status != hipSuccess) {
                 LOG(LOG_LEVEL_ERROR,
-                    "Error: HIP reports %s during the destruction of SyncedArray (double free ?).",
+                    "Error: HIP reports %s during the destruction of DualArray.",
                     hipGetErrorString(h_status));
             }
         } else {
@@ -91,7 +91,7 @@ struct DualArray {
         hipError_t status = hipFree(device_data);
         if (status != hipSuccess) {
             LOG(LOG_LEVEL_ERROR,
-                "Error: HIP reports %s during the destruction of SyncedArray (double free ?).",
+                "Error: HIP reports %s during the destruction of DualArray.",
                 hipGetErrorString(status));
         }
     }

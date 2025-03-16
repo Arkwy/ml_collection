@@ -24,7 +24,7 @@ struct DeviceArray {
         hipError_t status = hipFree(data);
         if (status != hipSuccess) {
             LOG(LOG_LEVEL_ERROR,
-                "Error: HIP reports %s during the destruction of SyncedArray (double free ?).",
+                "Error: HIP reports %s during the destruction of DeviceArray.",
                 hipGetErrorString(status));
         }
     }
