@@ -76,6 +76,7 @@ struct PSO {
     static __global__ void share_scores(
         const float* const neighborhood, float* const best_known_fitness
     );  // TODO
+
     static __global__ void global_share_scores(
         float* const best_known_fitness,
         float* const best_known_position,
@@ -93,21 +94,11 @@ struct PSO {
 
         particles.best_position.device_copy(particles.position);
         particles.best_fitness.device_copy(particles.fitness);
+
+        particles.best_known_position.device_copy(particles.position);
+        particles.best_known_fitness.device_copy(particles.fitness);
     }
 
-    // self.fitness = self.space(self.position)
-
-    // self.particle_best_fitness = self.fitness
-    // self.particle_best_position = self.position
-
-    // local_fitness = self.fitness[None, :].expand_as(self.neighborhood).where(
-    //     self.neighborhood,
-    //     torch.inf,
-    // )
-
-    // particle_best_known_fitness_id = local_fitness.argmin(-1)
-    // self.particle_best_known_fitness = self.fitness[particle_best_known_fitness_id]
-    // self.particle_best_known_position = self.position[particle_best_known_fitness_id]
 };
 
 
