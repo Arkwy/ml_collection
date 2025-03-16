@@ -3,48 +3,57 @@
 #include "pso/eval_function.hpp"
 #include "pso/pso.hpp"
 #include "pso/space.hpp"
+#include "pso/topology.hpp"
 
-// using MyEvalFunction = EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>>;
 
-// template <>
-// __device__ float MyEvalFunction::eval_point(const float* const point) {
-//     return 0;
-// }
+using MyEvalFunction = EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>>;
 
+ 
 template <>
-__device__ float EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>>::eval_point(const float* const point) {
+__device__ float MyEvalFunction::eval_point(const float* const point) {
     return 0;
 }
 
-struct MyEvalFunction : public EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>, MyEvalFunction> {
-    __device__ static float eval_point(const float* const point) {
-        return point[0] + 2.0 * point[1] - point[2];
-    }
+
+struct MyDerivedEvalFunction
+    : public EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>, MyDerivedEvalFunction> {
+    __device__ static float eval_point(const float* const point) { return point[0] + 2.0 * point[1] - point[2]; }
 };
 
-struct MyOtherEvalFunction : public EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>, MyOtherEvalFunction> {
-    __device__ static float eval_point(const float* const point) {
-        return point[0] - 2.0 * point[1] + point[2];
-    }
+
+struct MyOtherDerivedEvalFunction
+    : public EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpace<3>, MyOtherDerivedEvalFunction> {
+    __device__ static float eval_point(const float* const point) { return point[0] - 2.0 * point[1] + point[2]; }
 };
+
+
 
 int main() {
-	const size_t N = 10;
+    const size_t N = 10;
 
-	MyEvalFunction ef(BoxSpace<3>({{{-1, 1}, {-1, 1}, {-1, 1}}}));
+    MyEvalFunction ef(BoxSpace<3>({{{-1, 1}, {-1, 1}, {-1, 1}}}));
 
-    PSO<N, MyEvalFunction, Topology::GLOBAL> pso(ef, 0.5, 0.4, 0.6);
+    PSO<N, MyEvalFunction, Topology<TopologyCategory::GLOBAL>> pso(ef, 0.5, 0.4, 0.6);
 
     std::cout << pso.particles.position << std::endl;
     std::cout << pso.particles.fitness << std::endl;
 
-	MyOtherEvalFunction o_ef(BoxSpace<3>({{{-1, 1}, {-1, 1}, {-1, 1}}}));
 
-    PSO<N, MyOtherEvalFunction, Topology::GLOBAL> o_pso(o_ef, 0.5, 0.4, 0.6);
+    MyDerivedEvalFunction d_ef(BoxSpace<3>({{{-1, 1}, {-1, 1}, {-1, 1}}}));
 
-    std::cout << o_pso.particles.position << std::endl;
-    std::cout << o_pso.particles.fitness << std::endl;
+    PSO<N, MyDerivedEvalFunction, Topology<TopologyCategory::GLOBAL>> d_pso(d_ef, 0.5, 0.4, 0.6);
+
+    std::cout << d_pso.particles.position << std::endl;
+    std::cout << d_pso.particles.fitness << std::endl;
+
+
+    MyOtherDerivedEvalFunction od_ef(BoxSpace<3>({{{-1, 1}, {-1, 1}, {-1, 1}}}));
+
+    PSO<N, MyOtherDerivedEvalFunction, Topology<TopologyCategory::GLOBAL>> od_pso(od_ef, 0.5, 0.4, 0.6);
+
+    std::cout << od_pso.particles.position << std::endl;
+    std::cout << od_pso.particles.fitness << std::endl;
     // pso.run(100); // TODO
 
-	return 0;
+    return 0;
 }

@@ -46,9 +46,9 @@ struct Space {
     // no runtime polymorphism needed + cannot make virtual template function
     template <size_t N>
     void sample(const NDArray<float, N, D>& points) const;
+
     template <size_t N>
     void bound(const NDArray<float, N, D>& points) const;
-
 
 
   protected:

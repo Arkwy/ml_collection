@@ -45,10 +45,11 @@ struct NDArrayBase {
 
     size_t device_id() const { return array->device_id; }
 
-    void fill(const T& value) const {
+    void fill(const T& value) const {  // TODO create device side counterpart
         T* data_ptr = this->get_mut_host();
         std::fill(data_ptr, data_ptr + this->size, value);
     }
+
 
     void device_copy(const This& other) const {
         if (this->device_id() != other.device_id()) {
@@ -92,6 +93,23 @@ struct NDArray : public NDArrayBase<T, N, M...> {
     NDArray(const std::array<T, Base::size>& data, const size_t& device_id = 0) : Base(data, device_id) {}
 
     NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const size_t& offset) : Base(synced_array, offset) {}
+
+    // void fill(const T& value) const {  // TODO create device side counterpart
+    //     T* data_ptr = this->get_mut_host();
+    //     std::fill(data_ptr, data_ptr + this->size, value);
+    // }
+
+    void fill(const NDArray<T, M...>& sub_array) const {  // TODO create device side counterpart
+        T* data_ptr = this->get_mut_host();
+
+        memcpy(data_ptr, sub_array.get_host(), sub_array.size * sizeof(T));
+
+        size_t copied = sub_array.size;
+        while (copied < this->size) {
+            memcpy(data_ptr + copied, data_ptr, std::min(this->size - copied, copied) * sizeof(T));
+            copied *= 2;
+        }
+    }
 
     NDArray<T, M...> get_index(const size_t& index) const {
         assert(index < N);

@@ -10,8 +10,7 @@ BIN_DIR = bin
 TARGET = $(BIN_DIR)/main
 
 # Find all source files
-SRCS := $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/utils/*.cpp  $(SRC_DIR)/array/*.cpp $(SRC_DIR)/ops/*.cpp $(SRC_DIR)/ops/reduce/*.cpp)
-PSO := $(wildcard $(SRC_DIR)/pso/*.cpp)
+SRCS := $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/utils/*.cpp  $(SRC_DIR)/array/*.cpp $(SRC_DIR)/ops/*.cpp $(SRC_DIR)/ops/reduce/*.cpp $(SRC_DIR)/pso/*.cpp)
 OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 # Compiler flags
