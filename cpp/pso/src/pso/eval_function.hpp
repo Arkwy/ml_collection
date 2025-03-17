@@ -35,7 +35,7 @@ struct EvalFunction {
 
 
     __device__ static float eval_point(const float* const point);
-    __device__ static float eval_point(const float* const point, uint dim, float* const result);
+    __device__ static void eval_point(const float* const point, uint dim, float& result);
 
 
     __global__ static void eval_points(const float* const points, float* const result, const int N)
