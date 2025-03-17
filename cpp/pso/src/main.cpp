@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "array/device_array.hpp"
 #include "pso/eval_function.hpp"  //
 #include "pso/pso.hpp"            // algorithm logic
 #include "pso/space.hpp"          // definition space
@@ -68,26 +69,28 @@ __device__ void MyHighDimensionEvalFunction::eval_point(
 
 
 int main() {
-    constexpr const uint N = 10000;  // TODO find why it's crash when N is too large (too many blocks launched ?)
+    // constexpr const uint N = 10000;  // TODO find why it's crash when N is too large (too many blocks launched ?)
 
 
-    MyEvalFunction ef(BoxSpace<2>({{{-10, 10}, {-10, 10}}}));
-    PSO<N, MyEvalFunction, Topology<TopologyCategory::RING>> pso(ef, 0.5, 0.4, 0.6);
+    // MyEvalFunction ef(BoxSpace<2>({{{-10, 10}, {-10, 10}}}));
+    // PSO<N, MyEvalFunction, Topology<TopologyCategory::RING>> pso(ef, 0.5, 0.4, 0.6);
 
 
-    // std::array<std::array<float, 2>, D> bounds;
-    // bounds.fill({-1, 1});
-    // MyHighDimensionEvalFunction ef(bounds);
-    // PSO<N, MyHighDimensionEvalFunction, Topology<TopologyCategory::RING>> pso(ef, 0.5, 0.4, 0.6);
+    // // std::array<std::array<float, 2>, D> bounds;
+    // // bounds.fill({-1, 1});
+    // // MyHighDimensionEvalFunction ef(bounds);
+    // // PSO<N, MyHighDimensionEvalFunction, Topology<TopologyCategory::RING>> pso(ef, 0.5, 0.4, 0.6);
 
 
-    pso.step();   // perform a single iteration
-    pso.run(10000);  // perform 1000 iterations
+    // pso.step();   // perform a single iteration
+    // pso.run(10000);  // perform 1000 iterations
 
-    // get the point with the lowest fitness found by the algorithm
-    auto [best_pos, best_fitness] = pso.best();
+    // // get the point with the lowest fitness found by the algorithm
+    // auto [best_pos, best_fitness] = pso.best();
 
-    std::cout << best_pos << " => " << best_fitness << std::endl;
+    // std::cout << best_pos << " => " << best_fitness << std::endl;
+
+    DeviceArray<float> d(100000000);
 
     return 0;
 }
