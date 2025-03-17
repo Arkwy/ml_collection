@@ -19,20 +19,25 @@
 //     std::vector<bool> device_modified;
 //     std::vector<bool> host_modified;
 
+
 //     DesyncStatus(uint size) : device_modified(size_, false), host_modified(size_, false) {}
+
 
 //     void mark_device_modified(uint start, uint end) {
 //         std::fill(device_modified.begin() + start, device_modified.begin() + end, true);
 //     }
 
+
 //     void mark_host_modified(uint start, uint end) {
 //         std::fill(host_modified.begin() + start, host_modified.begin() + end, true);
 //     }
+
 
 //     bool has_overlap(uint start, uint end, bool check_device) const {
 //         const auto& modified = check_device ? device_modified : host_modified;
 //         return std::any_of(modified.begin() + start, modified.begin() + end, [](bool v) { return v; });
 //     }
+
 
 //     void clear() {
 //         std::fill(device_modified.begin(), device_modified.end(), false);
@@ -40,11 +45,14 @@
 //     }
 // };
 
+
+
 struct DesyncStatus {
     bool device_side = false;
     bool host_side = false;
     uint start = 0;
     uint end = 0;
+
 
     DesyncStatus operator+(const DesyncStatus& other) const {
         if (!(device_side || host_side)) return other;
@@ -58,11 +66,14 @@ struct DesyncStatus {
         return new_status;
     }
 
+
     void operator+=(const DesyncStatus& other) { *this = *this + other; }
+
 
     bool overlaps_section(const uint& start_, const uint& end_) const {
         return (device_side || host_side) && (start_ < end) && (end_ > start);
     }
+
 
     uint size() const { return end - start; }
 };
@@ -96,7 +107,9 @@ struct DualArray {
         }
     }
 
+
     DualArray(DualArray& other) = delete;
+
 
     const T* const get_device(const uint& start, const uint& size) const {
         if (desync_status.host_side && desync_status.overlaps_section(start, start + size)) {
@@ -104,6 +117,7 @@ struct DualArray {
         }
         return device_data + start;
     }
+
 
     T* const get_mut_device(const uint& start, const uint& size) const {
         if (desync_status.host_side) {
@@ -113,12 +127,14 @@ struct DualArray {
         return device_data + start;
     }
 
+
     const T* const get_host(const uint& start, const uint& size) const {
         if (desync_status.device_side && desync_status.overlaps_section(start, start + size)) {
             sync_with_device();
         }
         return host_data + start;
     }
+
 
     T* const get_mut_host(const uint& start, const uint& size) const {
         if (desync_status.device_side) {
@@ -128,10 +144,12 @@ struct DualArray {
         return host_data + start;
     }
 
+
   private:
     T* const device_data;
     T* const host_data;
     mutable DesyncStatus desync_status;
+
 
     T* alloc_device(const uint& device_id = 0) const {
         T* data;
@@ -140,15 +158,17 @@ struct DualArray {
         return data;
     }
 
+
     T* alloc_host() const {
         T* data;
         HIP_CHECK(hipHostMalloc(&data, size * sizeof(T)));
         return data;
     }
 
+
     void sync_with_device() const {
         if (desync_status.device_side) {
-            LOG(LOG_LEVEL_INFO, "Sync with device on %p.", this);
+            LOG(LOG_LEVEL_DEBUG, "Sync with device on %p.", this);
             assert(!desync_status.host_side);
             HIP_CHECK(hipSetDevice(device_id));
             HIP_CHECK(hipDeviceSynchronize());
@@ -162,9 +182,10 @@ struct DualArray {
         }
     }
 
+
     void sync_with_host() const {
         if (desync_status.host_side) {
-            LOG(LOG_LEVEL_INFO, "Sync with host on %p.", this);
+            LOG(LOG_LEVEL_DEBUG, "Sync with host on %p.", this);
             assert(!desync_status.device_side);
             HIP_CHECK(hipSetDevice(device_id));
             HIP_CHECK(hipDeviceSynchronize());

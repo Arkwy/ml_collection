@@ -1,10 +1,12 @@
 #ifndef EVAL_FUNCTION_H
 #define EVAL_FUNCTION_H
 
-#include <cstddef>
+#include <hip/amd_detail/amd_hip_runtime.h>
+
 #include <cstdio>
 #include <type_traits>
 
+#include "particles.hpp"
 #include "space.hpp"
 
 enum class PointEvaluationMode { SingleThreaded, MultiThreaded, Custom };
@@ -35,6 +37,8 @@ struct EvalFunction {
 
 
     __device__ static float eval_point(const float* const point);
+
+
     __device__ static void eval_point(const float* const point, uint dim, float& result);
 
 
@@ -55,16 +59,58 @@ struct EvalFunction {
     __global__ static void eval_points(const float* const points, float* const result, const int N)
         requires is_multi_threaded<PEM>
     {
-        int point_idx = threadIdx.y + blockDim.y * blockIdx.y;
-        int dim_idx = threadIdx.x + blockDim.x * blockIdx.x;
+        int point_idx = blockIdx.x;
+        int dim_idx = threadIdx.x;
 
-        if (point_idx < N && dim_idx < DefinitionSpace::dim) {
-            if constexpr (std::is_void_v<Derived>) {
-                eval_point(points + point_idx * DefinitionSpace::dim, dim_idx, result[point_idx]);
-            } else {
-                Derived::eval_point(points + point_idx * DefinitionSpace::dim, dim_idx, result[point_idx]);
-            }
+        assert(point_idx < N);
+        
+        if constexpr (std::is_void_v<Derived>) {
+            eval_point(points + point_idx * DefinitionSpace::dim, dim_idx, result[point_idx]);
+        } else {
+            Derived::eval_point(points + point_idx * DefinitionSpace::dim, dim_idx, result[point_idx]);
         }
+    }
+
+
+    template <uint N>
+    static void eval_points(const Particles<N, DefinitionSpace::dim>& particles)
+        requires is_single_threaded<PEM>
+    {
+        uint device_id = particles.position.device_id();
+        HIP_CHECK(hipSetDevice(device_id));
+
+        hipDeviceProp_t props;
+        HIP_CHECK(hipGetDeviceProperties(&props, device_id));
+        uint max_threads_per_block = props.maxThreadsPerBlock;
+
+        eval_points<<<(N + max_threads_per_block - 1) / max_threads_per_block, std::min(max_threads_per_block, N)>>>(
+            particles.position.get_device(),
+            particles.fitness.get_mut_device(),
+            N
+        );
+    }
+
+
+    template <uint N>
+    static void eval_points(const Particles<N, DefinitionSpace::dim>& particles)
+        requires is_multi_threaded<PEM>
+    {
+        uint device_id = particles.position.device_id();
+
+        hipDeviceProp_t props;
+        HIP_CHECK(hipGetDeviceProperties(&props, device_id));
+
+        uint max_threads_per_block = props.maxThreadsPerBlock;
+
+        if (DefinitionSpace::dim > max_threads_per_block) {
+            throw std::runtime_error("Spatial dimensions limit exceeded. Please use `PointEvaluationMode::Custom`");
+        }
+
+        uint warp_size = props.warpSize;
+        uint threads_per_block = warp_size * ((DefinitionSpace::dim + warp_size - 1) / warp_size);
+
+        // TODO try finding how to have better grid and block dim while keeping eval_point definition easy
+        eval_points<<<N, threads_per_block>>>(particles.position.get_device(), particles.fitness.get_mut_device(), N);
     }
 };
 

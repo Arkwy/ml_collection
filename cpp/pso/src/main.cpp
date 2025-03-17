@@ -15,6 +15,7 @@ __device__ float MyEvalFunction::eval_point(const float* const point) {
     return (point[0] - 1) * (point[0] - 1) + point[1] * point[1];
 }
 
+
 // Or by inheriting `EvalFunction` and using CRTP, which allows compiling with multiple different functions to evaluate.
 // Note that in this case you must provide the `PointEvaluationMode` template argument which defaults to
 // `SingleThreaded`. More on that bellow.
@@ -32,8 +33,10 @@ struct MyOtherDerivedEvalFunction
 
 
 // For high dimension space, you can use multiple GPU threads to compute the fitness of each point.
-// This should support up to a 1024D space (depends on your GPU), above that, use `PointEvaluationMode::Custom` (not
+// This should support up to a 1024D space (depends on your GPU). Above 1024 , use `PointEvaluationMode::Custom` (not
 // actually implemented yet :( ).
+// Avoid using it with less than a 32D space as it may degrade performance (32 is general
+// case warp size, depends on hardware), prefer `SingleThreaded` or `Custom`.
 #define D 128
 using MyHighDimensionEvalFunction = EvalFunction<BoxSpace<D>, PointEvaluationMode::MultiThreaded>;
 
@@ -43,11 +46,10 @@ __device__ void MyHighDimensionEvalFunction::eval_point(
     const uint dim,            // dimension to process by this GPU thread
     float& result              // variable to write result (= fitness) in.
 ) {
-
     // eval function example: returns the euclidean distance to the origin
 
-    __shared__ float s_point[D]; // use shared memory for faster access during computation
-    if (dim < D) {  // don't forget to make sure dim is valid as it is not guaranted
+    __shared__ float s_point[D];  // use shared memory for faster access during computation
+    if (dim < D) {                // don't forget to make sure dim is valid as it is not guaranted
         s_point[dim] = point[dim] * point[dim];
     }
     __syncthreads();
@@ -61,19 +63,28 @@ __device__ void MyHighDimensionEvalFunction::eval_point(
     }
 
     if (dim == 0) {  // make sure only one thread writes to result
-        result = sqrt(s_point[0]);
+        // result = sqrt(s_point[0]);
     }
 }
 
+
+
 int main() {
-    const uint N = 10;
+    constexpr const uint N = 10000;  // TODO find why it's crash when N is to large (too many blocks launched ?)
+
 
     MyEvalFunction ef(BoxSpace<2>({{{-10, 10}, {-10, 10}}}));
-
     PSO<N, MyEvalFunction, Topology<TopologyCategory::RING>> pso(ef, 0.5, 0.4, 0.6);
 
-    pso.step();     // perform a single iteration
-    pso.run(1000);  // perform 1000 iterations
+
+    // std::array<std::array<float, 2>, D> bounds;
+    // bounds.fill({-1, 1});
+    // MyHighDimensionEvalFunction ef(bounds);
+    // PSO<N, MyHighDimensionEvalFunction, Topology<TopologyCategory::RING>> pso(ef, 0.5, 0.4, 0.6);
+
+
+    pso.step();   // perform a single iteration
+    pso.run(100);  // perform 1000 iterations
 
     // get the point with the lowest fitness found by the algorithm
     auto [best_pos, best_fitness] = pso.best();

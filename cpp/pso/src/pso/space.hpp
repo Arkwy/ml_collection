@@ -76,7 +76,7 @@ struct Space {
                 }
             }
 
-            y_threads_per_block = std::min((uint)points, max_threads_per_block / x_threads);
+            y_threads_per_block = std::min(points, max_threads_per_block / x_threads);
 
             block_dim.x = x_threads;
             block_dim.y = y_threads_per_block;
@@ -116,7 +116,7 @@ struct BoxSpace : public Space<D> {
 
         auto [grid_dim, block_dim] = this->kernel_dims_pointwise_ops(N, points.device_id());
 
-        LOG(LOG_LEVEL_INFO,
+        LOG(LOG_LEVEL_DEBUG,
             "\nSampling %d points in a %dD space:\ngrid dim: (%d, %d, %d)\nblock dim: (%d, %d, %d)\n",
             N,
             D,

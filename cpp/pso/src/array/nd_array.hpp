@@ -25,7 +25,7 @@
  * The separation of this class with the data holder allows sharing same data with other NDArray (using a shared_ptr to
  * this data holder) and avoiding memory copies when working with subset of the data.
  *
- * TODO: Support DeviceArray and Host array as aleternative data holders to reduce memory synchronisation overhead when
+ * TODO: Support DeviceArray and Host array as alternative data holders to reduce memory synchronisation overhead when
  * not needed.
  *
  */
@@ -35,15 +35,21 @@ struct NDArrayBase {
     constexpr static const uint dim = 1 + sizeof...(M);
     constexpr static const uint size = mul<N, M...>::value;
 
+
     const T* const get_device() const { return array->get_device(offset, size); }
+
 
     T* const get_mut_device() const { return array->get_mut_device(offset, size); }
 
+
     const T* const get_host() const { return array->get_host(offset, size); }
+
 
     T* const get_mut_host() const { return array->get_mut_host(offset, size); }
 
+
     uint device_id() const { return array->device_id; }
+
 
     void fill(const T& value) const {  // TODO create device side counterpart
         T* data_ptr = this->get_mut_host();
@@ -61,6 +67,7 @@ struct NDArrayBase {
         HIP_CHECK(hipMemcpy(this_data_ptr, other_data_ptr, this->size * sizeof(T), hipMemcpyDeviceToDevice));
     }
 
+
     void host_copy(const This& other) const {
         T* this_data_ptr = this->get_mut_host();
         T* other_data_ptr = other.get_host();
@@ -72,11 +79,14 @@ struct NDArrayBase {
     const bool is_view = false;
     const uint offset = 0;
 
+
     NDArrayBase(const uint& device_id = 0) : array(std::make_shared<DualArray<T>>(size, device_id)) {}
+
 
     NDArrayBase(const std::array<T, size>& data, const uint& device_id = 0) : NDArrayBase(device_id) {
         memcpy(array->get_mut_host(offset, size), data.data(), size * sizeof(T));
     }
+
 
     NDArrayBase(const std::shared_ptr<DualArray<T>>& synced_array, const uint& offset)
         : array(synced_array), is_view(true), offset(offset) {}
@@ -88,16 +98,15 @@ template <typename T, uint N, uint... M>
 struct NDArray : public NDArrayBase<T, N, M...> {
     using Base = NDArrayBase<T, N, M...>;
 
+
     NDArray(const uint& device_id = 0) : Base(device_id) {}
+
 
     NDArray(const std::array<T, Base::size>& data, const uint& device_id = 0) : Base(data, device_id) {}
 
+
     NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const uint& offset) : Base(synced_array, offset) {}
 
-    // void fill(const T& value) const {  // TODO create device side counterpart
-    //     T* data_ptr = this->get_mut_host();
-    //     std::fill(data_ptr, data_ptr + this->size, value);
-    // }
 
     void fill(const NDArray<T, M...>& sub_array) const {  // TODO create device side counterpart
         T* data_ptr = this->get_mut_host();
@@ -111,12 +120,15 @@ struct NDArray : public NDArrayBase<T, N, M...> {
         }
     }
 
+
     NDArray<T, M...> get_index(const uint& index) const {
         assert(index < N);
         return NDArray<T, M...>(this->array, this->offset + index * mul<M...>::value);
     }
 
+
     NDArray<T, M...> operator[](const uint& index) const { return this->get_index(index); }
+
 
     std::string repr(const uint& offset = 0) const {
         std::ostringstream oss;
@@ -133,25 +145,33 @@ template <typename T, uint N>
 struct NDArray<T, N> : public NDArrayBase<T, N> {
     using Base = NDArrayBase<T, N>;
 
+
     NDArray(const uint& device_id = 0) : Base(device_id) {}
+
 
     NDArray(const std::array<T, Base::size>& data, const uint& device_id = 0) : Base(data, device_id) {}
 
+
     NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const uint& offset) : Base(synced_array, offset) {}
+
 
     T get_index(const uint& index) const {
         assert(index < N);
         return this->get_host()[this->offset + index];
     }
 
+
     T& get_index(const uint& index) {
         assert(index < N);
         return this->get_mut_host()[index];
     }
 
+
     T operator[](const uint& index) const { return this->get_index(index); }
 
+
     T& operator[](const uint& index) { return this->get_index(index); }
+
 
     std::string repr(const uint& offset = 0) const {
         const T* const arr = this->get_host();

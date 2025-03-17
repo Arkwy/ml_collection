@@ -60,20 +60,7 @@ struct PSO {
 
   private:
     void init_fitness() const {
-        uint device_id = particles.position.device_id();
-        HIP_CHECK(hipSetDevice(device_id));
-
-        hipDeviceProp_t props;
-        HIP_CHECK(hipGetDeviceProperties(&props, device_id));
-        uint max_threads_per_block = props.maxThreadsPerBlock;
-
-        eval_function.eval_points<<<
-            (N + max_threads_per_block - 1) / max_threads_per_block,
-            std::min(max_threads_per_block, N)>>>(
-            particles.position.get_device(),
-            particles.fitness.get_mut_device(),
-            N
-        );
+        EF::eval_points(particles);
 
         particles.best_position.device_copy(particles.position);
         particles.best_fitness.device_copy(particles.fitness);
@@ -97,13 +84,7 @@ struct PSO {
         HIP_CHECK(hipGetDeviceProperties(&props, device_id));
         uint max_threads_per_block = props.maxThreadsPerBlock;
 
-        eval_function.eval_points<<<
-            (N + max_threads_per_block - 1) / max_threads_per_block,
-            std::min(max_threads_per_block, N)>>>(
-            particles.position.get_device(),
-            particles.fitness.get_mut_device(),
-            N
-        );
+        EF::eval_points(particles);
 
         update_pb<<<(N + max_threads_per_block - 1) / max_threads_per_block, std::min(max_threads_per_block, N)>>>(
             particles.fitness.get_device(),
