@@ -35,8 +35,6 @@ struct MyOtherDerivedEvalFunction
 // For high dimension space, you can use multiple GPU threads to compute the fitness of each point.
 // This should support up to a 1024D space (depends on your GPU). Above 1024 , use `PointEvaluationMode::Custom` (not
 // actually implemented yet :( ).
-// Avoid using it with less than a 32D space as it may degrade performance (32 is general
-// case warp size, depends on hardware), prefer `SingleThreaded` or `Custom`.
 #define D 1024
 using MyHighDimensionEvalFunction = EvalFunction<BoxSpace<D>, PointEvaluationMode::MultiThreaded>;
 
