@@ -12,12 +12,6 @@
 #include "topology.hpp"
 
 
-template <typename T>
-concept EvalFunctionType = requires {
-    // This checks if `T` is or inherits from any specialization of `EvalFunction<PEM, S, D>`
-    []<PointEvaluationMode PEM, typename S, typename D>(EvalFunction<PEM, S, D>*) {}(std::declval<T*>());
-};
-
 template <uint N, EvalFunctionType EF, TopologyType Tp>
 struct PSO {
     constexpr static const uint D = EF::DefinitionSpace::dim;
