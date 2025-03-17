@@ -132,9 +132,9 @@ struct BoxSpace : public Space<D> {
 
     template <uint N>
     void bound(const NDArray<float, N, D>& points) const {
-        HIP_CHECK(hipSetDevice(points.device_array->device_id()))
+        HIP_CHECK(hipSetDevice(points.device_id()))
 
-        auto [grid_dim, block_dim] = this->kernel_dims_pointwise_ops(N);
+            auto [grid_dim, block_dim] = this->kernel_dims_pointwise_ops(N, points.device_id());
 
         clamp<N, D><<<grid_dim, block_dim>>>(points.get_mut_device(), bounds.get_device());
     }

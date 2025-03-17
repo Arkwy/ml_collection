@@ -11,7 +11,7 @@ using MyEvalFunction = EvalFunction<PointEvaluationMode::SingleThreaded, BoxSpac
 
 template <>
 __device__ float MyEvalFunction::eval_point(const float* const point) {
-    return point[0] * point[0] + point[1] * point[1];
+    return (point[0] - 1) * (point[0] - 1) + point[1] * point[1];
 }
 
 
@@ -32,7 +32,7 @@ __device__ float MyEvalFunction::eval_point(const float* const point) {
 int main() {
     const uint N = 10;
 
-    MyEvalFunction ef(BoxSpace<2>({{{-1, 1}, {-1, 1}}}));
+    MyEvalFunction ef(BoxSpace<2>({{{-10, 10}, {-10, 10}}}));
 
     PSO<N, MyEvalFunction, Topology<TopologyCategory::RING>> pso(ef, 0.5, 0.4, 0.6);
 

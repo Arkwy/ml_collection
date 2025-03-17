@@ -216,6 +216,8 @@ struct PSO {
         update_position_kernel<<<
             (N + max_threads_per_block - 1) / max_threads_per_block,
             std::min(max_threads_per_block, N)>>>(particles.position.get_mut_device(), particles.velocity.get_device());
+
+        eval_function.definition_space.bound(particles.position); // make sure particles don't leave definition space
     }
 
     __global__ static void update_position_kernel(float* const position, const float* const velocity) {
