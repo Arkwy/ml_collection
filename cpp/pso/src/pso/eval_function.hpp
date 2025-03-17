@@ -13,7 +13,7 @@ enum class PointEvaluationMode { SingleThreaded, MultiThreaded, Custom };
 template <typename T>
 concept SpaceType = requires {
     // This checks if `T` inherits from any specialization of `Space<D>`
-    []<size_t D>(Space<D>*) {}(std::declval<T*>());
+    []<uint D>(Space<D>*) {}(std::declval<T*>());
 };
 
 
@@ -28,10 +28,10 @@ concept is_multi_threaded = std::integral_constant<bool, PEM == PointEvaluationM
 template <PointEvaluationMode PEM, SpaceType S, typename Derived = void>
 struct EvalFunction {
     using DefinitionSpace = S;
-    const DefinitionSpace space;  // PSO get access to space through EvalFunction
+    const DefinitionSpace definition_space;  // PSO get access to space through EvalFunction
 
 
-    EvalFunction(const DefinitionSpace& space) : space(space) {}
+    EvalFunction(const DefinitionSpace& space) : definition_space(space) {}
 
 
     __device__ static float eval_point(const float* const point);

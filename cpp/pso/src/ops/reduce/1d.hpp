@@ -79,7 +79,7 @@ __global__ void kernel_reduce_block_1d(typename Op::DType* const val, uint* cons
 template <typename Op, uint N>
     requires is_no_id_op<Op>
 Op::DType reduce_1d(const NDArray<typename Op::DType, N>& data) {
-    const size_t device_id = data.device_id();
+    const uint device_id = data.device_id();
     HIP_CHECK(hipSetDevice(device_id));
 
     hipDeviceProp_t props;
@@ -129,7 +129,7 @@ Op::DType reduce_1d(const NDArray<typename Op::DType, N>& data) {
 template <typename Op, uint N>
     requires is_id_op<Op>
 uint reduce_1d(const NDArray<typename Op::DType, N>& data) {
-    const size_t device_id = data.device_id();
+    const uint device_id = data.device_id();
     HIP_CHECK(hipSetDevice(device_id));
 
     hipDeviceProp_t props;

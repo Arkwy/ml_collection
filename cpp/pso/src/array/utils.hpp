@@ -1,17 +1,17 @@
 #ifndef ARRAY_UTILS_H
 #define ARRAY_UTILS_H
 
-template <size_t... N>
+template <uint... N>
 struct mul;
 
-template <size_t N>
+template <uint N>
 struct mul<N> {
-    constexpr static const size_t value = N;
+    constexpr static const uint value = N;
 };
 
-template <size_t N, size_t... M>
+template <uint N, uint... M>
 struct mul<N, M...> {
-    constexpr static const size_t value = N * mul<M...>::value;
+    constexpr static const uint value = N * mul<M...>::value;
 };
 
 #endif

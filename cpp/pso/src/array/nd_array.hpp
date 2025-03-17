@@ -29,11 +29,11 @@
  * not needed.
  *
  */
-template <typename T, size_t N, size_t... M>
+template <typename T, uint N, uint... M>
 struct NDArrayBase {
     using This = NDArrayBase<T, N, M...>;
-    constexpr static const size_t dim = 1 + sizeof...(M);
-    constexpr static const size_t size = mul<N, M...>::value;
+    constexpr static const uint dim = 1 + sizeof...(M);
+    constexpr static const uint size = mul<N, M...>::value;
 
     const T* const get_device() const { return array->get_device(offset, size); }
 
@@ -43,7 +43,7 @@ struct NDArrayBase {
 
     T* const get_mut_host() const { return array->get_mut_host(offset, size); }
 
-    size_t device_id() const { return array->device_id; }
+    uint device_id() const { return array->device_id; }
 
     void fill(const T& value) const {  // TODO create device side counterpart
         T* data_ptr = this->get_mut_host();
@@ -70,29 +70,29 @@ struct NDArrayBase {
   protected:
     const std::shared_ptr<DualArray<T>> array;
     const bool is_view = false;
-    const size_t offset = 0;
+    const uint offset = 0;
 
-    NDArrayBase(const size_t& device_id = 0) : array(std::make_shared<DualArray<T>>(size, device_id)) {}
+    NDArrayBase(const uint& device_id = 0) : array(std::make_shared<DualArray<T>>(size, device_id)) {}
 
-    NDArrayBase(const std::array<T, size>& data, const size_t& device_id = 0) : NDArrayBase(device_id) {
+    NDArrayBase(const std::array<T, size>& data, const uint& device_id = 0) : NDArrayBase(device_id) {
         memcpy(array->get_mut_host(offset, size), data.data(), size * sizeof(T));
     }
 
-    NDArrayBase(const std::shared_ptr<DualArray<T>>& synced_array, const size_t& offset)
+    NDArrayBase(const std::shared_ptr<DualArray<T>>& synced_array, const uint& offset)
         : array(synced_array), is_view(true), offset(offset) {}
 };
 
 
 
-template <typename T, size_t N, size_t... M>
+template <typename T, uint N, uint... M>
 struct NDArray : public NDArrayBase<T, N, M...> {
     using Base = NDArrayBase<T, N, M...>;
 
-    NDArray(const size_t& device_id = 0) : Base(device_id) {}
+    NDArray(const uint& device_id = 0) : Base(device_id) {}
 
-    NDArray(const std::array<T, Base::size>& data, const size_t& device_id = 0) : Base(data, device_id) {}
+    NDArray(const std::array<T, Base::size>& data, const uint& device_id = 0) : Base(data, device_id) {}
 
-    NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const size_t& offset) : Base(synced_array, offset) {}
+    NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const uint& offset) : Base(synced_array, offset) {}
 
     // void fill(const T& value) const {  // TODO create device side counterpart
     //     T* data_ptr = this->get_mut_host();
@@ -104,24 +104,24 @@ struct NDArray : public NDArrayBase<T, N, M...> {
 
         memcpy(data_ptr, sub_array.get_host(), sub_array.size * sizeof(T));
 
-        size_t copied = sub_array.size;
+        uint copied = sub_array.size;
         while (copied < this->size) {
             memcpy(data_ptr + copied, data_ptr, std::min(this->size - copied, copied) * sizeof(T));
             copied *= 2;
         }
     }
 
-    NDArray<T, M...> get_index(const size_t& index) const {
+    NDArray<T, M...> get_index(const uint& index) const {
         assert(index < N);
         return NDArray<T, M...>(this->array, this->offset + index * mul<M...>::value);
     }
 
-    NDArray<T, M...> operator[](const size_t& index) const { return this->get_index(index); }
+    NDArray<T, M...> operator[](const uint& index) const { return this->get_index(index); }
 
-    std::string repr(const size_t& offset = 0) const {
+    std::string repr(const uint& offset = 0) const {
         std::ostringstream oss;
         oss << "[" << this->get_index(0).repr(offset + 1);
-        for (size_t i = 1; i < N; i++) {
+        for (uint i = 1; i < N; i++) {
             oss << std::endl << std::setw(offset + 1) << " " << this->get_index(i).repr(offset + 1);
         }
         oss << "]";
@@ -129,35 +129,35 @@ struct NDArray : public NDArrayBase<T, N, M...> {
     }
 };
 
-template <typename T, size_t N>
+template <typename T, uint N>
 struct NDArray<T, N> : public NDArrayBase<T, N> {
     using Base = NDArrayBase<T, N>;
 
-    NDArray(const size_t& device_id = 0) : Base(device_id) {}
+    NDArray(const uint& device_id = 0) : Base(device_id) {}
 
-    NDArray(const std::array<T, Base::size>& data, const size_t& device_id = 0) : Base(data, device_id) {}
+    NDArray(const std::array<T, Base::size>& data, const uint& device_id = 0) : Base(data, device_id) {}
 
-    NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const size_t& offset) : Base(synced_array, offset) {}
+    NDArray(const std::shared_ptr<DualArray<T>>& synced_array, const uint& offset) : Base(synced_array, offset) {}
 
-    T get_index(const size_t& index) const {
+    T get_index(const uint& index) const {
         assert(index < N);
         return this->get_host()[this->offset + index];
     }
 
-    T& get_index(const size_t& index) {
+    T& get_index(const uint& index) {
         assert(index < N);
         return this->get_mut_host()[index];
     }
 
-    T operator[](const size_t& index) const { return this->get_index(index); }
+    T operator[](const uint& index) const { return this->get_index(index); }
 
-    T& operator[](const size_t& index) { return this->get_index(index); }
+    T& operator[](const uint& index) { return this->get_index(index); }
 
-    std::string repr(const size_t& offset = 0) const {
+    std::string repr(const uint& offset = 0) const {
         const T* const arr = this->get_host();
         std::ostringstream oss;
         oss << "[";
-        for (size_t i = 0; i < N; i++) {
+        for (uint i = 0; i < N; i++) {
             oss << std::setw(9) << std::scientific << std::setprecision(2) << arr[i];
             if (i != N - 1) oss << ", ";
         }
@@ -168,7 +168,7 @@ struct NDArray<T, N> : public NDArrayBase<T, N> {
 
 
 
-template <typename T, size_t N, size_t... M>
+template <typename T, uint N, uint... M>
 std::ostream& operator<<(std::ostream& os, const NDArray<T, N, M...>& array) {
     return os << array.repr();
 }

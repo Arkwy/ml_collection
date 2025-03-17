@@ -19,17 +19,17 @@
 //     std::vector<bool> device_modified;
 //     std::vector<bool> host_modified;
 
-//     DesyncStatus(size_t size) : device_modified(size_, false), host_modified(size_, false) {}
+//     DesyncStatus(uint size) : device_modified(size_, false), host_modified(size_, false) {}
 
-//     void mark_device_modified(size_t start, size_t end) {
+//     void mark_device_modified(uint start, uint end) {
 //         std::fill(device_modified.begin() + start, device_modified.begin() + end, true);
 //     }
 
-//     void mark_host_modified(size_t start, size_t end) {
+//     void mark_host_modified(uint start, uint end) {
 //         std::fill(host_modified.begin() + start, host_modified.begin() + end, true);
 //     }
 
-//     bool has_overlap(size_t start, size_t end, bool check_device) const {
+//     bool has_overlap(uint start, uint end, bool check_device) const {
 //         const auto& modified = check_device ? device_modified : host_modified;
 //         return std::any_of(modified.begin() + start, modified.begin() + end, [](bool v) { return v; });
 //     }
@@ -43,8 +43,8 @@
 struct DesyncStatus {
     bool device_side = false;
     bool host_side = false;
-    size_t start = 0;
-    size_t end = 0;
+    uint start = 0;
+    uint end = 0;
 
     DesyncStatus operator+(const DesyncStatus& other) const {
         if (!(device_side || host_side)) return other;
@@ -60,20 +60,20 @@ struct DesyncStatus {
 
     void operator+=(const DesyncStatus& other) { *this = *this + other; }
 
-    bool overlaps_section(const size_t& start_, const size_t& end_) const {
+    bool overlaps_section(const uint& start_, const uint& end_) const {
         return (device_side || host_side) && (start_ < end) && (end_ > start);
     }
 
-    size_t size() const { return end - start; }
+    uint size() const { return end - start; }
 };
 
 template <typename T>
 struct DualArray {
-    const size_t size;
-    const size_t device_id = 0;
+    const uint size;
+    const uint device_id = 0;
     const bool pinned = true;
 
-    DualArray(const size_t& size, const size_t& device_id = 0, const bool& pinned = true)
+    DualArray(const uint& size, const uint& device_id = 0, const bool& pinned = true)
         : size(size), device_id(device_id), pinned(pinned), device_data(alloc_device(device_id)), host_data(alloc_host()) {}
 
 
@@ -98,14 +98,14 @@ struct DualArray {
 
     DualArray(DualArray& other) = delete;
 
-    const T* const get_device(const size_t& start, const size_t& size) const {
+    const T* const get_device(const uint& start, const uint& size) const {
         if (desync_status.host_side && desync_status.overlaps_section(start, start + size)) {
             sync_with_host();
         }
         return device_data + start;
     }
 
-    T* const get_mut_device(const size_t& start, const size_t& size) const {
+    T* const get_mut_device(const uint& start, const uint& size) const {
         if (desync_status.host_side) {
             sync_with_host();
         }
@@ -113,14 +113,14 @@ struct DualArray {
         return device_data + start;
     }
 
-    const T* const get_host(const size_t& start, const size_t& size) const {
+    const T* const get_host(const uint& start, const uint& size) const {
         if (desync_status.device_side && desync_status.overlaps_section(start, start + size)) {
             sync_with_device();
         }
         return host_data + start;
     }
 
-    T* const get_mut_host(const size_t& start, const size_t& size) const {
+    T* const get_mut_host(const uint& start, const uint& size) const {
         if (desync_status.device_side) {
             sync_with_device();
         }
@@ -133,7 +133,7 @@ struct DualArray {
     T* const host_data;
     mutable DesyncStatus desync_status;
 
-    T* alloc_device(const size_t& device_id = 0) const {
+    T* alloc_device(const uint& device_id = 0) const {
         T* data;
         HIP_CHECK(hipSetDevice(device_id));
         HIP_CHECK(hipMalloc(&data, size * sizeof(T)));

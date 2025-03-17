@@ -34,12 +34,12 @@
  * @member best_known_fitness  (best fitness a neighbor of each particle ever reached)
  * @member best_known_position  (position corresponding to best known fitness)
  */
-template <size_t N, size_t D>
+template <uint N, uint D>
 struct Particles {
     const NDArray<float, N, D> position;
     const NDArray<float, N, D> velocity;
     const NDArray<float, N> fitness;
-    const NDArray<uint32_t, (N + 31) / 32, (N + 31) / 32> neighborhood;
+    const NDArray<uint, (N + 31) / 32, (N + 31) / 32> neighborhood;
     const NDArray<float, N> best_fitness;
     const NDArray<float, N, D> best_position;
     const NDArray<float, N> best_known_fitness;

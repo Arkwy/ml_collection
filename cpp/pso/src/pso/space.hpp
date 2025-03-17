@@ -15,20 +15,20 @@
 
 __device__ inline float clamp(float x, float min_val, float max_val) { return fmaxf(min_val, fminf(x, max_val)); }
 
-template <size_t N, size_t D>
+template <uint N, uint D>
 __global__ void scale_in_bounds(float* const points, const float* const bounds) {
-    int x_idx = blockDim.x * blockIdx.x + threadIdx.x;
-    int y_idx = blockDim.y * blockIdx.y + threadIdx.y;
+    uint x_idx = blockDim.x * blockIdx.x + threadIdx.x;
+    uint y_idx = blockDim.y * blockIdx.y + threadIdx.y;
 
     if (x_idx < D && y_idx < N) {
-        int idx = y_idx * D + x_idx;
+        uint idx = y_idx * D + x_idx;
         points[idx] *= bounds[2 * x_idx + 1] - bounds[2 * x_idx];
         points[idx] += bounds[2 * x_idx];
     }
 }
 
 
-template <size_t N, size_t D>
+template <uint N, uint D>
 __global__ void clamp(float* const points, const float* const bounds) {
     int x_idx = blockDim.x * blockIdx.x + threadIdx.x;
     int y_idx = blockDim.y * blockIdx.y + threadIdx.y;
@@ -39,45 +39,44 @@ __global__ void clamp(float* const points, const float* const bounds) {
     }
 }
 
-template <size_t D>
+template <uint D>
 struct Space {
-    static constexpr size_t dim = D;
+    static constexpr uint dim = D;
 
-    // no runtime polymorphism needed + cannot make virtual template function
-    template <size_t N>
+    template <uint N>
     void sample(const NDArray<float, N, D>& points) const;
 
-    template <size_t N>
+    template <uint N>
     void bound(const NDArray<float, N, D>& points) const;
 
 
   protected:
     Space() = default;
-    std::pair<dim3, dim3> kernel_dims_pointwise_ops(const size_t& points, const size_t& device_id) const {
+    std::pair<dim3, dim3> kernel_dims_pointwise_ops(const uint& points, const uint& device_id) const {
         dim3 grid_dim;
         dim3 block_dim;
 
         hipDeviceProp_t props;
         HIP_CHECK(hipGetDeviceProperties(&props, device_id));
 
-        uint32_t warp_size = props.warpSize;
-        uint32_t max_threads_per_block = props.maxThreadsPerBlock;
+        uint warp_size = props.warpSize;
+        uint max_threads_per_block = props.maxThreadsPerBlock;
 
-        uint32_t x_warps = (D + warp_size - 1) / warp_size;
-        uint32_t x_threads = x_warps * warp_size;
+        uint x_warps = (D + warp_size - 1) / warp_size;
+        uint x_threads = x_warps * warp_size;
 
         // row major arrays, grouping along last = D dim for better coalescence
         // 1st case: can have mutiple points in one block as D is small enough to fit multiple times in a block
         // 2nd case: each block process at most a single point + partially the following/previous one
         if (x_threads <= (max_threads_per_block / 2)) {
-            uint32_t y_threads_per_block;
+            uint y_threads_per_block;
             if (x_warps == 1) {
                 while (x_threads >> 1 >= D) {
                     x_threads >>= 1;
                 }
             }
 
-            y_threads_per_block = std::min((uint32_t)points, max_threads_per_block / x_threads);
+            y_threads_per_block = std::min((uint)points, max_threads_per_block / x_threads);
 
             block_dim.x = x_threads;
             block_dim.y = y_threads_per_block;
@@ -95,18 +94,18 @@ struct Space {
 };
 
 
-template <size_t D>
+template <uint D>
 struct BoxSpace : public Space<D> {
     const NDArray<float, D, 2> bounds;
 
     BoxSpace(const std::array<std::array<float, 2>, D>& bounds) : bounds() {
-        for (size_t i = 0; i < D; i++) {
+        for (uint i = 0; i < D; i++) {
             this->bounds[i][0] = bounds[i][0];
             this->bounds[i][1] = bounds[i][1];
         }
     }
 
-    template <size_t N>
+    template <uint N>
     void sample(const NDArray<float, N, D>& points) const {
         HIP_CHECK(hipSetDevice(points.device_id()));
 
@@ -131,7 +130,7 @@ struct BoxSpace : public Space<D> {
         scale_in_bounds<N, D><<<grid_dim, block_dim>>>(points.get_mut_device(), bounds.get_device());
     }
 
-    template <size_t N>
+    template <uint N>
     void bound(const NDArray<float, N, D>& points) const {
         HIP_CHECK(hipSetDevice(points.device_array->device_id()))
 

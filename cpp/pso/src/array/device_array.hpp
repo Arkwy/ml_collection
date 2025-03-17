@@ -12,11 +12,11 @@
 
 template <typename T>
 struct DeviceArray {
-    const size_t size;
-    const size_t device_id = 0;
+    const uint size;
+    const uint device_id = 0;
     T* const data;
 
-    DeviceArray(const size_t& size, const size_t& device_id = 0)
+    DeviceArray(const uint& size, const uint& device_id = 0)
         : size(size), device_id(device_id), data(alloc_device(device_id)) {}
 
 
@@ -32,7 +32,7 @@ struct DeviceArray {
     DeviceArray(DeviceArray& other) = delete;
 
 
-    T* alloc_device(const size_t& device_id = 0) const {
+    T* alloc_device(const uint& device_id = 0) const {
         T* data;
         HIP_CHECK(hipSetDevice(device_id));
         HIP_CHECK(hipMalloc(&data, size * sizeof(T)));

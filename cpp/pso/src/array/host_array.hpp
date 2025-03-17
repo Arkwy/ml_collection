@@ -12,11 +12,11 @@
 
 template <typename T>
 struct HostArray {
-    const size_t size;
+    const uint size;
     const bool pinned = true;
     T* const data;
 
-    HostArray(const size_t& size, const bool& pinned)
+    HostArray(const uint& size, const bool& pinned)
         : size(size), pinned(pinned), data(alloc_data()) {}
 
 
