@@ -37,7 +37,7 @@ struct MyOtherDerivedEvalFunction
 // actually implemented yet :( ).
 // Avoid using it with less than a 32D space as it may degrade performance (32 is general
 // case warp size, depends on hardware), prefer `SingleThreaded` or `Custom`.
-#define D 128
+#define D 1024
 using MyHighDimensionEvalFunction = EvalFunction<BoxSpace<D>, PointEvaluationMode::MultiThreaded>;
 
 template <>
@@ -63,14 +63,14 @@ __device__ void MyHighDimensionEvalFunction::eval_point(
     }
 
     if (dim == 0) {  // make sure only one thread writes to result
-        // result = sqrt(s_point[0]);
+        result = sqrt(s_point[0]);
     }
 }
 
 
 
 int main() {
-    constexpr const uint N = 10000;  // TODO find why it's crash when N is to large (too many blocks launched ?)
+    constexpr const uint N = 10000;  // TODO find why it's crash when N is too large (too many blocks launched ?)
 
 
     MyEvalFunction ef(BoxSpace<2>({{{-10, 10}, {-10, 10}}}));
@@ -84,7 +84,7 @@ int main() {
 
 
     pso.step();   // perform a single iteration
-    pso.run(100);  // perform 1000 iterations
+    pso.run(10000);  // perform 1000 iterations
 
     // get the point with the lowest fitness found by the algorithm
     auto [best_pos, best_fitness] = pso.best();
