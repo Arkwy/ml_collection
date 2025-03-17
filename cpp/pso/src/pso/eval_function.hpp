@@ -25,7 +25,7 @@ template <PointEvaluationMode PEM>
 concept is_multi_threaded = std::integral_constant<bool, PEM == PointEvaluationMode::MultiThreaded>::value;
 
 
-template <PointEvaluationMode PEM, SpaceType S, typename Derived = void>
+template <SpaceType S, PointEvaluationMode PEM = PointEvaluationMode::SingleThreaded, typename Derived = void>
 struct EvalFunction {
     using DefinitionSpace = S;
     const DefinitionSpace definition_space;  // PSO get access to space through EvalFunction
@@ -35,6 +35,7 @@ struct EvalFunction {
 
 
     __device__ static float eval_point(const float* const point);
+    __device__ static float eval_point(const float* const point, uint dim, float* const result);
 
 
     __global__ static void eval_points(const float* const points, float* const result, const int N)
@@ -65,6 +66,13 @@ struct EvalFunction {
             }
         }
     }
+};
+
+
+template <typename T>
+concept EvalFunctionType = requires {
+    // This checks if `T` is or inherits from any specialization of `EvalFunction<PEM, S, D>`
+    []<typename S, PointEvaluationMode PEM, typename D>(EvalFunction<S, PEM, D>*) {}(std::declval<T*>());
 };
 
 #endif
