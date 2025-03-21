@@ -35,7 +35,6 @@
                 packages = with pkgs; [
                   # c/c++
                   clang-tools
-                  cmake
                   codespell
                   conan
                   cppcheck
@@ -46,6 +45,8 @@
                   vcpkg-tool
                   gdb
                   valgrind
+                  meson
+                  ninja
 
                   # correct lsp support
                   bear

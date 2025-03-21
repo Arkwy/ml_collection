@@ -1,0 +1,3 @@
+option('log_level', type: 'combo', value: 'info',
+  choices: ['debug', 'info', 'warning', 'error'],
+  description: 'Set log level: debug, info, warning, or error')

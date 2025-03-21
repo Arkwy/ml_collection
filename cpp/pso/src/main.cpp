@@ -82,7 +82,7 @@ int main() {
 
 
     pso.step();   // perform a single iteration
-    pso.run(10000);  // perform 1000 iterations
+    pso.run(1000);  // perform 1000 iterations
 
     // get the point with the lowest fitness found by the algorithm
     auto [best_pos, best_fitness] = pso.best();

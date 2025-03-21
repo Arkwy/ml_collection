@@ -1,12 +1,10 @@
-.venv
 .direnv
 .envrc
 __pycache__/
 target/
 .cache/
-obj/
-bin/
 compile_commands.json
 cpp/test/
+cpp/builds/
 vgcore*
 .gdb_history
