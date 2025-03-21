@@ -23,7 +23,5 @@ meson compile -C builds
 ./bulds/[algo]
 ```
 
-If the build succeeds, the program will automatically run.
-
 ## Algorithms
 🔄 **Particle Swarm Optimization (PSO) – In Progress**
