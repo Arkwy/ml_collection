@@ -19,7 +19,7 @@ nix develop
 
 ```bash
 CXX=hipcc meson setup builds
-meson compile -C builds
+meson compile -C builds [algo(optional)]
 ./bulds/[algo]
 ```
 
