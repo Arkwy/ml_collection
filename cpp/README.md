@@ -15,7 +15,7 @@ For Nix users, you can enter a development shell with the necessary dependencies
 nix develop
 ```
 
-## Building and Running the Project
+## Building and running an algorithm
 
 ```bash
 CXX=hipcc meson setup builds
