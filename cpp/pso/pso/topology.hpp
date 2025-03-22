@@ -5,7 +5,6 @@
 #include <hip/hip_runtime.h>
 
 #include <algorithm>
-#include <stdexcept>
 
 #include "../array/nd_array.hpp"
 #include "../ops/reduce/1d.hpp"

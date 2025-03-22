@@ -8,10 +8,9 @@
 #include <sys/types.h>
 
 #include <algorithm>
-#include <cstddef>
 
-#include "../utils/hip_utils.hpp"
-#include "../utils/logger.hpp"
+#include "../../utils/hip_utils.hpp"
+#include "../../utils/logger.hpp"
 
 
 //// bitmask based DesyncStatus, may avoid useless sync but bigger overhead
@@ -78,6 +77,7 @@ struct DesyncStatus {
     uint size() const { return end - start; }
 };
 
+
 template <typename T>
 struct DualArray {
     const uint size;
@@ -112,6 +112,7 @@ struct DualArray {
 
 
     const T* const get_device(const uint& start, const uint& size) const {
+        assert(start + size <= this->size);
         if (desync_status.host_side && desync_status.overlaps_section(start, start + size)) {
             sync_with_host();
         }
@@ -120,6 +121,7 @@ struct DualArray {
 
 
     T* const get_mut_device(const uint& start, const uint& size) const {
+        assert(start + size <= this->size);
         if (desync_status.host_side) {
             sync_with_host();
         }
@@ -129,6 +131,7 @@ struct DualArray {
 
 
     const T* const get_host(const uint& start, const uint& size) const {
+        assert(start + size <= this->size);
         if (desync_status.device_side && desync_status.overlaps_section(start, start + size)) {
             sync_with_device();
         }
@@ -137,6 +140,7 @@ struct DualArray {
 
 
     T* const get_mut_host(const uint& start, const uint& size) const {
+        assert(start + size <= this->size);
         if (desync_status.device_side) {
             sync_with_device();
         }

@@ -4,13 +4,11 @@
 #include <hip/amd_detail/amd_hip_runtime.h>
 #include <hip/amd_detail/amd_warp_functions.h>
 
-#include <cstddef>
-#include <cstdint>
 #include <rocrand/rocrand.hpp>
 #include <utility>
 
 #include "../array/nd_array.hpp"
-#include "../utils/logger.hpp"
+#include "../../utils/logger.hpp"
 
 
 __device__ inline float clamp(float x, float min_val, float max_val) { return fmaxf(min_val, fminf(x, max_val)); }

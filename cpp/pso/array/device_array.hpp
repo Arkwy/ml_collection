@@ -4,10 +4,8 @@
 #include <hip/hip_runtime.h>
 #include <sys/types.h>
 
-#include <cstddef>
-
-#include "../utils/hip_utils.hpp"
-#include "../utils/logger.hpp"
+#include "../../utils/hip_utils.hpp"
+#include "../../utils/logger.hpp"
 
 
 template <typename T>

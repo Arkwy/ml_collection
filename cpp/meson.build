@@ -18,16 +18,22 @@ add_project_arguments('-DLOG_LEVEL=' + log_level_value, language: 'cpp')
 
 
 # Common cpp files
-common_sources = []
+common_sources = [
+    'utils/hip_timer.cpp',
+    'utils/logger.cpp',
+]
 
 
 # Algorithms specific cpp files
-algo_sources = {'pso' : [
-  'pso/src/main.cpp',
-  'pso/src/ops/fill.cpp',
-  'pso/src/utils/hip_timer.cpp',
-  'pso/src/utils/logger.cpp'
-]}
+algo_sources = {
+    'pso' : [
+        'pso/main.cpp',
+        'pso/ops/fill.cpp',
+    ],
+    'pso_simplified' : [
+        'pso_simplified/main.cpp',
+    ],
+}
 
 
 # Create an executable for each algorithm

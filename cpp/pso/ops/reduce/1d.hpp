@@ -7,7 +7,7 @@
 
 #include "../../array/device_array.hpp"
 #include "../../array/nd_array.hpp"
-#include "../../utils/hip_utils.hpp"
+#include "../../../utils/hip_utils.hpp"
 #include "../fill.hpp"
 #include "ops.hpp"
 

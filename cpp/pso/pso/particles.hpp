@@ -3,7 +3,6 @@
 
 #include <hip/amd_detail/amd_hip_runtime.h>
 
-#include <cstddef>
 #include <ostream>
 
 #include "../array/nd_array.hpp"

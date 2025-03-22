@@ -5,10 +5,8 @@
 #include <hip/hip_runtime.h>
 #include <sys/types.h>
 
-#include <cstddef>
-
-#include "../utils/logger.hpp"
-#include "../utils/hip_utils.hpp"
+#include "../../utils/logger.hpp"
+#include "../../utils/hip_utils.hpp"
 
 template <typename T>
 struct HostArray {
