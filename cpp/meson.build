@@ -52,7 +52,7 @@ binaries = []
 foreach name, sources : algo_sources
   bin_name = name + '_debug'
   bin = executable(bin_name, [sources,  common_sources],
-    cpp_args: ['-O0', '-g'],
+    cpp_args: ['-g', '-O1'], # 'O1' and not 'O0' because `cooperative_groups::sync(cooperative_groups::this_grid);` never ends otherwise
     link_args: ['-lrocrand'],
   )
   binaries += bin

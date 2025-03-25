@@ -8,7 +8,6 @@
 struct MyEvalFunction {
     constexpr static const uint32_t dim = 3;
     static __device__ float eval(const float* point) {
-        printf("%d -> %f, %f, %f\n", this_grid().thread_rank(), point[0], point[1], point[2]);
         return point[0] * point[0] + point[1] * point[1] + point[2] * point[2];
     }
 };
