@@ -1,2 +1,2 @@
 # TODO
-(you can read `src/main.cpp` tho)
+(you can read `main.cpp` tho)

@@ -46,3 +46,14 @@ foreach name, sources : algo_sources
   )
   binaries += bin
 endforeach
+
+# Create debug counterpart
+binaries = []
+foreach name, sources : algo_sources
+  bin_name = name + '_debug'
+  bin = executable(bin_name, [sources,  common_sources],
+    cpp_args: ['-O0', '-g'],
+    link_args: ['-lrocrand'],
+  )
+  binaries += bin
+endforeach

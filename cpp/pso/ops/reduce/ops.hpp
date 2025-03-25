@@ -8,7 +8,7 @@
 
 template <typename T>
 concept OpSupportedType =
-    std::same_as<T, double> || std::same_as<T, float> || std::same_as<T, int32_t> || std::same_as<T, uint>;
+    std::same_as<T, double> || std::same_as<T, float> || std::same_as<T, int> || std::same_as<T, uint>;
 
 template <OpSupportedType T>
 struct Add {

@@ -26,8 +26,6 @@
  * @member position
  * @member velocity
  * @member fitness  (evaluated by PSO)
- * @member neighborhood  (bit mask indicating for each directional pair of particles wether they share their position
- * and fitness)
  * @member best_fitness  (best fitness each particle ever reached)
  * @member best_position  (position corresponding to best fitness)
  * @member best_known_fitness  (best fitness a neighbor of each particle ever reached)
@@ -38,7 +36,6 @@ struct Particles {
     const NDArray<float, N, D> position;
     const NDArray<float, N, D> velocity;
     const NDArray<float, N> fitness;
-    const NDArray<uint, (N + 31) / 32, (N + 31) / 32> neighborhood;
     const NDArray<float, N> best_fitness;
     const NDArray<float, N, D> best_position;
     const NDArray<float, N> best_known_fitness;
@@ -48,7 +45,6 @@ struct Particles {
         : position(),
           velocity(),
           fitness(),
-          neighborhood(),
           best_fitness(),
           best_position(),
           best_known_fitness(),

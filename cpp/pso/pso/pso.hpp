@@ -129,7 +129,7 @@ struct PSO {
         HIP_CHECK(hipGetDeviceProperties(&props, device_id));
         uint max_threads_per_block = props.maxThreadsPerBlock;
 
-        DeviceArray<float> r_p(N, device_id);
+        DeviceArray<float> r_p(N, device_id); // TODO stop reallocating each step
         DeviceArray<float> r_g(N, device_id);
 
         rocrand_cpp::default_random_engine engine;
