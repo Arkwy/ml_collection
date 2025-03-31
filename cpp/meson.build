@@ -47,12 +47,13 @@ foreach name, sources : algo_sources
   binaries += bin
 endforeach
 
-# Create debug counterpart
+# Create debug counterpart (results in crashes using grid level cooperative groups ...,
+# O1 or O2 may avoid some issues but programs crash anyway using gdb)
 binaries = []
 foreach name, sources : algo_sources
   bin_name = name + '_debug'
   bin = executable(bin_name, [sources,  common_sources],
-    cpp_args: ['-g', '-O1'], # 'O1' and not 'O0' because `cooperative_groups::sync(cooperative_groups::this_grid);` never ends otherwise
+    cpp_args: ['-g', '-O2'],
     link_args: ['-lrocrand'],
   )
   binaries += bin
