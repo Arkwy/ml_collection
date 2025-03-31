@@ -53,7 +53,7 @@ binaries = []
 foreach name, sources : algo_sources
   bin_name = name + '_debug'
   bin = executable(bin_name, [sources,  common_sources],
-    cpp_args: ['-g', '-O2'],
+    cpp_args: ['-g', '-O0'],
     link_args: ['-lrocrand'],
   )
   binaries += bin
