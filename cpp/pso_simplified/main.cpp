@@ -1,9 +1,9 @@
+#include <hip/amd_detail/amd_hip_runtime.h>
 #include <iostream>
 
 #define WARP_SIZE 32
 #define MAX_THREADS_PER_BLOCK 1024
 
-#include <cstddef>
 #include "pso.hpp"
 
 struct MyEvalFunction {
@@ -23,7 +23,7 @@ int main() {
         return -1;
     }
 
-    const uint number_of_particles = 100;
+    const uint number_of_particles = 2048;
 
     const float momentum = .2;
     const float cognitive_coefficient = .2;
@@ -31,7 +31,8 @@ int main() {
 
     PSO<MyEvalFunction> pso(number_of_particles, momentum, cognitive_coefficient, social_coefficient);
 
-    pso.run(100);
+    pso.run(100000);
+
     auto [best_fitness, best_point] = pso.get_best();
 
     std::cout << "(" << best_point[0] << ", " << best_point[1] << ") -> " << best_fitness << std::endl;

@@ -16,20 +16,20 @@ static_assert(MAX_THREADS_PER_BLOCK >= 1, "`MAX_THREADS_PER_BLOCK` must be >= 1.
 #include <hip/hip_runtime.h>
 
 #include <algorithm>
+#include <bit>
 #include <concepts>
 #include <limits>
-#include <bit>
 #include <type_traits>
 
 #include "../utils/hip_utils.hpp"
-#include "eval_function.hpp"
 #include "array.hpp"
-
-#include "pso_O0.hip" // nearly no optimization (100 it, 100 particles, 2D space => runtime = 0.192 s)
+#include "eval_function.hpp"
+#include "pso_O0.hip"  // nearly no optimization
 // #include "pso_O1.hip" // use of shared memory TODO
-// #include "pso_O2.hip" // avoidance of warp divergence TODO
-// #include "pso_O3.hip" // loop unrolling TODO
-// #include "pso_O4.hip" // use of warp level communication TODO
+// #include "pso_O2.hip" // no bank conflits TODO
+// #include "pso_O3.hip" // avoidance of warp divergence TODO
+// #include "pso_O4.hip" // loop unrolling TODO
+// #include "pso_O5.hip" // use of warp level communication TODO
 
 template <EvalFunction EF>
 struct PSO {
@@ -58,9 +58,7 @@ struct PSO {
           device_state_ptr(alloc_device_state()) {}
 
 
-    ~PSO() {
-        HIP_CHECK_NOEXCEPT(hipFree(device_state_ptr));
-    }
+    ~PSO() { HIP_CHECK_NOEXCEPT(hipFree(device_state_ptr)); }
 
 
     void run(const uint& iterations) {
@@ -68,7 +66,7 @@ struct PSO {
         void* kernel_args[] = {&device_state_ptr};
 
         dim3 grid_dim((n + MAX_THREADS_PER_BLOCK - 1) / MAX_THREADS_PER_BLOCK);
-        dim3 block_dim(std::min(n, (uint) MAX_THREADS_PER_BLOCK));
+        dim3 block_dim(std::min(n, (uint)MAX_THREADS_PER_BLOCK));
 
         HIP_CHECK(hipLaunchCooperativeKernel(pso_kernel<EF>, grid_dim, block_dim, kernel_args, 0, hipStreamDefault));
         HIP_CHECK(hipDeviceSynchronize());
@@ -82,19 +80,28 @@ struct PSO {
 
 
         dim3 grid_dim((n + MAX_THREADS_PER_BLOCK - 1) / MAX_THREADS_PER_BLOCK);
-        dim3 block_dim(std::min(n, (uint) MAX_THREADS_PER_BLOCK));
+        dim3 block_dim(std::min(n, (uint)MAX_THREADS_PER_BLOCK));
 
-        void* kernel_args[] = {&device_state_ptr, (void*) &(d_best_fitness.data), (void*) &(d_best_position.data), (void*) &(idxs_buffer.data)};
+        void* kernel_args[] = {
+            &device_state_ptr,
+            (void*)&(d_best_fitness.data),
+            (void*)&(d_best_position.data),
+            (void*)&(idxs_buffer.data)
+        };
 
-        HIP_CHECK(hipLaunchCooperativeKernel(best_position_and_fitness, grid_dim, block_dim, kernel_args, 0, hipStreamDefault));
+        HIP_CHECK(
+            hipLaunchCooperativeKernel(best_position_and_fitness, grid_dim, block_dim, kernel_args, 0, hipStreamDefault)
+        );
 
         float h_best_fitness;
         std::array<float, EF::dim> h_best_position;
 
         HIP_CHECK(hipDeviceSynchronize());
-      
+
         HIP_CHECK(hipMemcpy(&h_best_fitness, d_best_fitness.data, sizeof(float), hipMemcpyDeviceToHost));
-        HIP_CHECK(hipMemcpy(h_best_position.data(), d_best_position.data, EF::dim * sizeof(float), hipMemcpyDeviceToHost));
+        HIP_CHECK(
+            hipMemcpy(h_best_position.data(), d_best_position.data, EF::dim * sizeof(float), hipMemcpyDeviceToHost)
+        );
 
         return std::pair<float, std::array<float, EF::dim>>(h_best_fitness, h_best_position);
     }

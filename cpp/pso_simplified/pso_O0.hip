@@ -172,6 +172,7 @@ __global__ void best_position_and_fitness(
             idxs[g_idx] = state.best_fitness[g_idx] < state.best_fitness[2 * g_idx] ? g_idx : 2 * g_idx;
         }
     }
+    running_threads >>= 1;
 
     sync(this_grid());
 
