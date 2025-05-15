@@ -6,17 +6,18 @@ from pso import PSOConfig, Topology
 from renderer import Renderer
 
 space = BoxSpace(
-    mins = torch.tensor([-10, -10]),
-    maxs = torch.tensor([10, 10]),
-    f = lambda x: ((x.abs() - 2) ** 2).sum(-1) ** 0.5 + (x * 10).sin().sum(-1) / 5,
+    mins = torch.tensor([-1, -1]),
+    maxs = torch.tensor([1, 1]),
+    f = lambda x: ((x.abs() - .2) ** 2).sum(-1) ** 0.5 + (x*100).sin().sum(-1) / 50,
+    # f = lambda x: ((x - torch.tensor([0.5, 0]))** 2).sum(-1),
 )
 
 pso_config = PSOConfig(
-    particles = 10,
+    particles = 100,
     topology = Topology.STAR,
-    momentum = 0.5,
-    cognitive_coefficient = 0.2,
-    social_coefficient = 0.6,
+    momentum = .2,
+    cognitive_coefficient = .2,
+    social_coefficient = .6,
     space = space,
 )
 
